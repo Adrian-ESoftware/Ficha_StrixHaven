@@ -36,10 +36,11 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
       return res.status(400).json({ error: 'Missing id or data', received: body });
     }
 
-    const token = process.env.BLOB_READ_WRITE_TOKEN;
+    let token = process.env.BLOB_READ_WRITE_TOKEN;
     if (!token) {
       throw new Error("BLOB_READ_WRITE_TOKEN is not defined in environment variables. Please set it in Vercel project settings.");
     }
+    token = token.replace(/^["']|["']$/g, '');
 
     const blob = await put(`characters/${id}.json`, JSON.stringify(data), {
       access: 'private',

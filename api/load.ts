@@ -13,10 +13,11 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
   }
 
   try {
-    const token = process.env.BLOB_READ_WRITE_TOKEN;
+    let token = process.env.BLOB_READ_WRITE_TOKEN;
     if (!token) {
       throw new Error("BLOB_READ_WRITE_TOKEN is not defined in environment variables. Please set it in Vercel project settings.");
     }
+    token = token.replace(/^["']|["']$/g, '');
 
     // List blobs with the character prefix to find the exact file
     const { blobs } = await list({ 
