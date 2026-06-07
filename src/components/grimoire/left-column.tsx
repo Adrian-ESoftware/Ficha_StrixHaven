@@ -167,7 +167,7 @@ export function LeftColumn() {
       </section>
 
       {/* CLASS FEATURE */}
-      <section className="bg-card p-6 border border-primary/30 clip-notch shadow-lg relative flex-1 flex flex-col">
+      <section className="bg-card p-6 border border-primary/30 clip-notch shadow-lg relative flex flex-col">
         <div className="flex items-center justify-between mb-4">
           <SectionHeader>Habilidade de Classe</SectionHeader>
 
@@ -198,7 +198,7 @@ export function LeftColumn() {
 
         <Divider />
 
-        <div className="bg-background/25 border border-primary/20 relative mt-4 clip-notch shadow-inner flex-1 min-h-[180px] flex flex-col">
+        <div className="bg-background/25 border border-primary/20 relative mt-4 clip-notch shadow-inner h-[400px] min-h-0 flex flex-col overflow-hidden">
           {/* Corner decorations */}
           <div className="absolute top-0 left-0 w-3 h-3 border-t border-l border-primary/40" />
           <div className="absolute top-0 right-0 w-3 h-3 border-t border-r border-primary/40" />
