@@ -141,6 +141,9 @@ interface CharacterContextType {
   updateNested: <K extends keyof CharacterData>(key: K, partial: Partial<CharacterData[K]>) => void;
   saveStatus: SaveStatus;
   characterId: string;
+  canEdit: boolean;
+  unlock: (password: string) => Promise<boolean>;
+  lock: () => void;
 }
 
 const CharacterContext = createContext<CharacterContextType | null>(null);
@@ -153,19 +156,42 @@ export function useCharacter() {
 
 // ─── API helpers ──────────────────────────────────────────────────────────────
 
-async function apiSave(id: string, data: CharacterData): Promise<boolean> {
+type SaveResult = 'saved' | 'unauthorized' | 'error';
+
+async function apiSave(id: string, data: CharacterData, password: string): Promise<SaveResult> {
   try {
     const res = await fetch('/api/save', {
       method: 'PUT',
-      headers: { 'Content-Type': 'application/json' },
+      headers: {
+        'Content-Type': 'application/json',
+        'X-Edit-Password': password,
+      },
       body: JSON.stringify({ id, data }),
     });
     if (!res.ok) {
       console.error('Failed to save character:', await readApiError(res));
     }
-    return res.ok;
+    if (res.status === 401) return 'unauthorized';
+    return res.ok ? 'saved' : 'error';
   } catch (error) {
     console.error('Failed to save character:', error);
+    return 'error';
+  }
+}
+
+async function apiUnlock(password: string): Promise<boolean> {
+  try {
+    const res = await fetch('/api/auth', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ password }),
+    });
+    if (!res.ok) {
+      console.error('Failed to unlock editing:', await readApiError(res));
+    }
+    return res.ok;
+  } catch (error) {
+    console.error('Failed to unlock editing:', error);
     return false;
   }
 }
@@ -206,7 +232,9 @@ export function CharacterProvider({ characterId, children }: CharacterProviderPr
   const [data, setData] = useState<CharacterData>(DEFAULT_CHARACTER);
   const [saveStatus, setSaveStatus] = useState<SaveStatus>('idle');
   const [loaded, setLoaded] = useState(false);
+  const [canEdit, setCanEdit] = useState(false);
   const debounceRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+  const passwordRef = useRef('');
   const dataRef = useRef(data);
   dataRef.current = data;
 
@@ -229,19 +257,25 @@ export function CharacterProvider({ characterId, children }: CharacterProviderPr
     if (debounceRef.current) clearTimeout(debounceRef.current);
     debounceRef.current = setTimeout(async () => {
       setSaveStatus('saving');
-      const ok = await apiSave(characterId, dataRef.current);
-      setSaveStatus(ok ? 'saved' : 'error');
+      const result = await apiSave(characterId, dataRef.current, passwordRef.current);
+      if (result === 'unauthorized') {
+        passwordRef.current = '';
+        setCanEdit(false);
+      }
+      setSaveStatus(result === 'saved' ? 'saved' : 'error');
       // Reset to idle after 3s
       setTimeout(() => setSaveStatus('idle'), 3000);
     }, 2000);
   }, [characterId]);
 
   const update = useCallback(<K extends keyof CharacterData>(key: K, value: CharacterData[K]) => {
+    if (!canEdit) return;
     setData((prev) => ({ ...prev, [key]: value }));
     triggerSave();
-  }, [triggerSave]);
+  }, [canEdit, triggerSave]);
 
   const updateNested = useCallback(<K extends keyof CharacterData>(key: K, partial: Partial<CharacterData[K]>) => {
+    if (!canEdit) return;
     setData((prev) => ({
       ...prev,
       [key]: typeof prev[key] === 'object' && !Array.isArray(prev[key])
@@ -249,7 +283,23 @@ export function CharacterProvider({ characterId, children }: CharacterProviderPr
         : partial,
     }));
     triggerSave();
-  }, [triggerSave]);
+  }, [canEdit, triggerSave]);
+
+  const unlock = useCallback(async (password: string) => {
+    const ok = await apiUnlock(password);
+    if (ok) {
+      passwordRef.current = password;
+      setCanEdit(true);
+    }
+    return ok;
+  }, []);
+
+  const lock = useCallback(() => {
+    if (debounceRef.current) clearTimeout(debounceRef.current);
+    passwordRef.current = '';
+    setCanEdit(false);
+    setSaveStatus('idle');
+  }, []);
 
   if (!loaded) {
     return (
@@ -263,7 +313,7 @@ export function CharacterProvider({ characterId, children }: CharacterProviderPr
   }
 
   return (
-    <CharacterContext.Provider value={{ data, update, updateNested, saveStatus, characterId }}>
+    <CharacterContext.Provider value={{ data, update, updateNested, saveStatus, characterId, canEdit, unlock, lock }}>
       {children}
     </CharacterContext.Provider>
   );

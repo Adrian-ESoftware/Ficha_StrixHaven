@@ -1,4 +1,4 @@
-import { useState, useEffect } from 'react';
+import { useState, useEffect, type FormEvent } from 'react';
 import { HeaderStats } from '@/components/grimoire/header-stats';
 import { LeftColumn } from '@/components/grimoire/left-column';
 import { RightColumn } from '@/components/grimoire/right-column';
@@ -43,8 +43,9 @@ export default function Home() {
 }
 
 function GrimoireSheet() {
-  const { data, saveStatus, characterId } = useCharacter();
+  const { saveStatus, characterId, canEdit, unlock, lock } = useCharacter();
   const [isOverlayOpen, setIsOverlayOpen] = useState(false);
+  const [isPasswordOpen, setIsPasswordOpen] = useState(false);
 
   return (
     <div className="min-h-[100dvh] w-full bg-background text-foreground relative overflow-hidden py-12 px-4 md:px-8 lg:px-12 selection:bg-primary/30">
@@ -64,6 +65,13 @@ function GrimoireSheet() {
           <span className="font-mono text-[9px] text-muted-foreground/60 tracking-wider">
             ID: <span className="text-primary/70 select-all">{characterId}</span>
           </span>
+          <button
+            type="button"
+            onClick={() => canEdit ? lock() : setIsPasswordOpen(true)}
+            className="border border-primary/40 px-3 py-1 font-mono text-[9px] text-primary tracking-widest uppercase hover:bg-primary/10 transition-colors"
+          >
+            {canEdit ? 'Bloquear edição' : 'Desbloquear edição'}
+          </button>
           {saveStatus === 'saving' && (
             <span className="text-primary animate-pulse text-[10px] font-mono tracking-widest uppercase">
               ✦ Salvando...
@@ -81,7 +89,11 @@ function GrimoireSheet() {
           )}
         </div>
 
-        <div className="bg-card/50 backdrop-blur-sm border border-primary/20 p-6 md:p-10 shadow-2xl">
+        <div
+          aria-disabled={!canEdit}
+          inert={!canEdit}
+          className={`bg-card/50 backdrop-blur-sm border border-primary/20 p-6 md:p-10 shadow-2xl transition-opacity ${canEdit ? '' : 'pointer-events-none opacity-75'}`}
+        >
           
           <HeaderStats />
 
@@ -161,6 +173,73 @@ function GrimoireSheet() {
           </div>
         </div>
       )}
+
+      {isPasswordOpen && (
+        <EditPasswordModal
+          onClose={() => setIsPasswordOpen(false)}
+          onUnlock={unlock}
+        />
+      )}
+    </div>
+  );
+}
+
+function EditPasswordModal({
+  onClose,
+  onUnlock,
+}: {
+  onClose: () => void;
+  onUnlock: (password: string) => Promise<boolean>;
+}) {
+  const [password, setPassword] = useState('');
+  const [error, setError] = useState('');
+  const [isSubmitting, setIsSubmitting] = useState(false);
+
+  const handleSubmit = async (event: FormEvent<HTMLFormElement>) => {
+    event.preventDefault();
+    setError('');
+    setIsSubmitting(true);
+    const ok = await onUnlock(password);
+    setIsSubmitting(false);
+
+    if (ok) {
+      onClose();
+    } else {
+      setError('Senha incorreta ou não configurada.');
+    }
+  };
+
+  return (
+    <div className="fixed inset-0 bg-background/90 backdrop-blur-md z-[60] flex items-center justify-center p-4" onClick={onClose}>
+      <form
+        onSubmit={handleSubmit}
+        onClick={(event) => event.stopPropagation()}
+        className="w-full max-w-sm bg-card border border-primary/40 p-6 shadow-2xl"
+      >
+        <h2 className="font-serif text-primary text-xl font-bold tracking-widest uppercase">Desbloquear edição</h2>
+        <p className="mt-2 text-sm text-muted-foreground">Digite a senha de edição desta ficha.</p>
+        <input
+          autoFocus
+          type="password"
+          value={password}
+          onChange={(event) => setPassword(event.target.value)}
+          className="mt-5 w-full bg-background border border-primary/30 px-3 py-2 text-foreground focus:outline-none focus:border-primary"
+          placeholder="Senha"
+        />
+        {error && <p className="mt-2 text-xs text-red-400">{error}</p>}
+        <div className="mt-5 flex justify-end gap-3">
+          <button type="button" onClick={onClose} className="px-4 py-2 text-xs font-mono uppercase text-muted-foreground">
+            Cancelar
+          </button>
+          <button
+            type="submit"
+            disabled={isSubmitting || !password}
+            className="border border-primary bg-primary/10 px-4 py-2 text-xs font-mono uppercase text-primary disabled:opacity-50"
+          >
+            {isSubmitting ? 'Verificando...' : 'Desbloquear'}
+          </button>
+        </div>
+      </form>
     </div>
   );
 }

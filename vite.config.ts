@@ -1,4 +1,4 @@
-import { defineConfig } from "vite";
+import { defineConfig, loadEnv } from "vite";
 import react from "@vitejs/plugin-react";
 import tailwindcss from "@tailwindcss/vite";
 import path from "path";
@@ -18,7 +18,7 @@ const basePath = process.env.BASE_PATH || "/";
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
 
-const vercelApiEmulator = () => ({
+const vercelApiEmulator = (editPassword: string) => ({
   name: "vercel-api-emulator",
   configureServer(server: any) {
     server.middlewares.use(async (req: any, res: any, next: any) => {
@@ -30,7 +30,30 @@ const vercelApiEmulator = () => ({
           fs.mkdirSync(dbDir, { recursive: true });
         }
 
-        if (url.pathname === "/api/save" && req.method === "PUT") {
+        if (url.pathname === "/api/auth" && req.method === "POST") {
+          let body = "";
+          req.on("data", (chunk: any) => { body += chunk; });
+          req.on("end", () => {
+            let password = "";
+            try {
+              password = JSON.parse(body || "{}").password;
+            } catch {
+              // Invalid JSON is treated as an invalid password.
+            }
+            const statusCode = editPassword && password === editPassword ? 200 : 401;
+            res.statusCode = statusCode;
+            res.setHeader("Content-Type", "application/json");
+            res.end(JSON.stringify(statusCode === 200
+              ? { authenticated: true }
+              : { error: "Invalid password" }));
+          });
+        } else if (url.pathname === "/api/save" && req.method === "PUT") {
+          if (!editPassword || req.headers["x-edit-password"] !== editPassword) {
+            res.statusCode = 401;
+            res.setHeader("Content-Type", "application/json");
+            res.end(JSON.stringify({ error: "Invalid password" }));
+            return;
+          }
           let body = "";
           req.on("data", (chunk: any) => { body += chunk; });
           req.on("end", () => {
@@ -84,13 +107,15 @@ const vercelApiEmulator = () => ({
   }
 });
 
+const localEnv = loadEnv(process.env.NODE_ENV || "development", __dirname, "");
+
 export default defineConfig({
   base: basePath,
   plugins: [
     react(),
     tailwindcss(),
     runtimeErrorOverlay(),
-    vercelApiEmulator(),
+    vercelApiEmulator(localEnv.EDIT_PASSWORD),
     ...(process.env.NODE_ENV !== "production" &&
       process.env.REPL_ID !== undefined
       ? [

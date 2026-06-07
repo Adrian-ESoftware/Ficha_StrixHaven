@@ -1,6 +1,15 @@
 import { put } from '@vercel/blob';
+import { timingSafeEqual } from 'node:crypto';
 
 const CHARACTER_ID_PATTERN = /^[a-zA-Z0-9_-]{1,64}$/;
+
+function passwordsMatch(candidate, expected) {
+  const candidateBuffer = Buffer.from(candidate);
+  const expectedBuffer = Buffer.from(expected);
+
+  return candidateBuffer.length === expectedBuffer.length
+    && timingSafeEqual(candidateBuffer, expectedBuffer);
+}
 
 export default async function handler(req, res) {
   if (req.method !== 'PUT') {
@@ -9,6 +18,18 @@ export default async function handler(req, res) {
   }
 
   try {
+    const editPassword = process.env.EDIT_PASSWORD;
+    if (!editPassword) {
+      return res.status(503).json({ error: 'EDIT_PASSWORD is not configured' });
+    }
+
+    const password = typeof req.headers['x-edit-password'] === 'string'
+      ? req.headers['x-edit-password']
+      : '';
+    if (!passwordsMatch(password, editPassword)) {
+      return res.status(401).json({ error: 'Invalid password' });
+    }
+
     let body = req.body;
 
     if (!body) {
