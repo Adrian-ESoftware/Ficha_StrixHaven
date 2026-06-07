@@ -57,7 +57,7 @@ export function HeaderStats() {
           <div className="grid grid-cols-1 sm:grid-cols-3 gap-6">
             <InputLine label="Pronomes" value={data.pronouns} onChange={(v: string) => update("pronouns", v)} />
             <InputLine label="Herança" value={data.heritage} onChange={(v: string) => update("heritage", v)} />
-            <InputLine label="Subclasse" value={data.subclass} onChange={(v: string) => update("subclass", v)} />
+            <InputLine label="Classe - Subclasse" value={data.subclass} onChange={(v: string) => update("subclass", v)} />
           </div>
 
         </div>
