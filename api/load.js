@@ -1,12 +1,11 @@
 import { list } from '@vercel/blob';
-import type { VercelRequest, VercelResponse } from '@vercel/node';
 
-export default async function handler(req: VercelRequest, res: VercelResponse) {
+export default async function handler(req, res) {
   if (req.method !== 'GET') {
     return res.status(405).json({ error: 'Method not allowed' });
   }
 
-  const id = req.query.id as string;
+  const id = req.query.id;
 
   if (!id) {
     return res.status(400).json({ error: 'Missing id parameter' });
@@ -39,7 +38,7 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
     const data = await response.json();
 
     return res.status(200).json(data);
-  } catch (err: any) {
+  } catch (err) {
     console.error('Load error:', err);
     return res.status(500).json({ 
       error: 'Failed to load character', 
