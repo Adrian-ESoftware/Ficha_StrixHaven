@@ -1,5 +1,6 @@
 import { useCharacter } from '@/lib/character-context';
 import { InputLine, StatShield } from './shared';
+import perfilImg from '@/components/imgs/perfil.png';
 
 export function HeaderStats() {
   const { data, update, updateNested } = useCharacter();
@@ -18,7 +19,7 @@ export function HeaderStats() {
         {/* LARGE PORTRAIT */}
         <div className="relative w-36 h-36 shrink-0 border-2 border-primary/30 rounded-xl overflow-hidden group shadow-[0_0_20px_rgba(233,193,118,0.2)] hover:border-primary/80 transition-all duration-500 bg-card">
           <img 
-            src="/elara_portrait.png" 
+            src={perfilImg} 
             alt="Avatar de Elara" 
             className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-700" 
           />
