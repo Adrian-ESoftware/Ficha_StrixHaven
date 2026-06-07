@@ -160,8 +160,12 @@ async function apiSave(id: string, data: CharacterData): Promise<boolean> {
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({ id, data }),
     });
+    if (!res.ok) {
+      console.error('Failed to save character:', await readApiError(res));
+    }
     return res.ok;
-  } catch {
+  } catch (error) {
+    console.error('Failed to save character:', error);
     return false;
   }
 }
@@ -169,11 +173,25 @@ async function apiSave(id: string, data: CharacterData): Promise<boolean> {
 async function apiLoad(id: string): Promise<CharacterData | null> {
   try {
     const res = await fetch(`/api/load?id=${encodeURIComponent(id)}`);
-    if (!res.ok) return null;
+    if (res.status === 404) return null;
+    if (!res.ok) {
+      console.error('Failed to load character:', await readApiError(res));
+      return null;
+    }
     const json = await res.json();
     return json as CharacterData;
-  } catch {
+  } catch (error) {
+    console.error('Failed to load character:', error);
     return null;
+  }
+}
+
+async function readApiError(res: Response): Promise<string> {
+  try {
+    const body = await res.json() as { error?: string; message?: string };
+    return [body.error, body.message].filter(Boolean).join(': ') || `HTTP ${res.status}`;
+  } catch {
+    return `HTTP ${res.status}`;
   }
 }
 

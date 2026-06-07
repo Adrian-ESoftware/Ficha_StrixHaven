@@ -1,19 +1,21 @@
 import { put } from '@vercel/blob';
 
+const CHARACTER_ID_PATTERN = /^[a-zA-Z0-9_-]{1,64}$/;
+
 export default async function handler(req, res) {
   if (req.method !== 'PUT') {
+    res.setHeader('Allow', 'PUT');
     return res.status(405).json({ error: 'Method not allowed' });
   }
 
   try {
     let body = req.body;
-    
-    // Parser de segurança caso a Vercel não tenha parseado o JSON automaticamente
+
     if (!body) {
       body = await new Promise((resolve) => {
-        let dataStr = "";
-        req.on("data", chunk => dataStr += chunk);
-        req.on("end", () => {
+        let dataStr = '';
+        req.on('data', (chunk) => { dataStr += chunk; });
+        req.on('end', () => {
           try {
             resolve(JSON.parse(dataStr));
           } catch {
@@ -25,37 +27,33 @@ export default async function handler(req, res) {
       try {
         body = JSON.parse(body);
       } catch {
-        // ignore
+        body = {};
       }
     }
 
     const { id, data } = body || {};
 
-    if (!id || !data) {
-      return res.status(400).json({ error: 'Missing id or data', received: body });
+    if (typeof id !== 'string' || !CHARACTER_ID_PATTERN.test(id)) {
+      return res.status(400).json({ error: 'Invalid id' });
     }
 
-    let token = process.env.BLOB_READ_WRITE_TOKEN;
-    if (!token) {
-      throw new Error("BLOB_READ_WRITE_TOKEN is not defined in environment variables. Please set it in Vercel project settings.");
+    if (!data || typeof data !== 'object' || Array.isArray(data)) {
+      return res.status(400).json({ error: 'Invalid data' });
     }
-    token = token.replace(/^["']|["']$/g, '');
 
     const blob = await put(`characters/${id}.json`, JSON.stringify(data), {
       access: 'private',
       addRandomSuffix: false,
       allowOverwrite: true,
       contentType: 'application/json',
-      token: token,
     });
 
     return res.status(200).json({ url: blob.url });
   } catch (err) {
     console.error('Save error:', err);
-    return res.status(500).json({ 
-      error: 'Failed to save character', 
-      message: err.message, 
-      stack: err.stack 
+    return res.status(500).json({
+      error: 'Failed to save character',
+      message: err instanceof Error ? err.message : 'Unknown error',
     });
   }
 }
