@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useCharacter } from '@/lib/character-context';
 import { SectionHeader, Divider } from './shared';
 
 // ─── Types ───────────────────────────────────────────────────────────────────
@@ -125,17 +125,19 @@ function TierCard({ tier }: { tier: Tier }) {
   const colorClass = TIER_COLORS[tier.tier as keyof typeof TIER_COLORS];
   const labelColor = TIER_LABEL_COLORS[tier.tier as keyof typeof TIER_LABEL_COLORS];
 
-  // State: for each option, an array of booleans (one per checkbox box)
-  const [checked, setChecked] = useState<Record<string, boolean[]>>(() =>
-    Object.fromEntries(tier.options.map((o) => [o.id, Array(o.boxes).fill(false)]))
-  );
+  const { data, update } = useCharacter();
 
   const toggle = (optionId: string, boxIndex: number) => {
-    setChecked((prev) => {
-      const arr = [...prev[optionId]];
-      arr[boxIndex] = !arr[boxIndex];
-      return { ...prev, [optionId]: arr };
-    });
+    const checks = data.levelUpChecks || {};
+    const prevOptionChecks = checks[optionId] || Array(tier.options.find(o => o.id === optionId)?.boxes || 0).fill(false);
+    const newOptionChecks = [...prevOptionChecks];
+    newOptionChecks[boxIndex] = !newOptionChecks[boxIndex];
+    
+    const newLevelUpChecks = {
+      ...checks,
+      [optionId]: newOptionChecks
+    };
+    update("levelUpChecks", newLevelUpChecks);
   };
 
   return (
@@ -170,7 +172,7 @@ function TierCard({ tier }: { tier: Tier }) {
             <CheckboxGroup
               count={opt.boxes}
               optionId={opt.id}
-              checked={checked[opt.id]}
+              checked={(data.levelUpChecks && data.levelUpChecks[opt.id]) || Array(opt.boxes).fill(false)}
               onToggle={(i) => toggle(opt.id, i)}
             />
             <span className="font-sans text-[11px] text-foreground/80 leading-snug">

@@ -1,53 +1,29 @@
 import { useState } from 'react';
 import ReactMarkdown from 'react-markdown';
 import { SectionHeader, Divider, Diamond, Circle, InputLine } from './shared';
-
-const PLACEHOLDER_FEATURES = `## Prestidigitação
-
-Você pode realizar efeitos mágicos sutis e inofensivos à vontade. Por exemplo, você pode mudar a cor de um objeto, criar um odor, acender uma vela, fazer um objeto minúsculo flutuar, iluminar uma sala ou consertar um pequeno objeto.
-
-## Padrões Estranhos
-
-Escolha um número entre 1 e 12. Quando você rolar esse número em um Dado de Dualidade, ganhe uma Esperança ou limpe um Estresse. Você pode mudar este número quando realizar um descanso longo.`;
+import { useCharacter } from '@/lib/character-context';
 
 export function LeftColumn() {
-  const [hp, setHp] = useState(Array(10).fill(false));
-  const [stress, setStress] = useState(Array(10).fill(false));
-  const [hope, setHope] = useState([false, false, false, false, false, false]);
-  
-  const [minorDmg, setMinorDmg] = useState("7");
-  const [majorDmg, setMajorDmg] = useState("14");
-  
-  const [features, setFeatures] = useState(PLACEHOLDER_FEATURES);
+  const { data, update } = useCharacter();
   const [isPreviewFeatures, setIsPreviewFeatures] = useState(true);
 
-  const [experiences, setExperiences] = useState([
-    { text: "Aprendiz da Torre Alta", active: false },
-    { text: "Sobrevivente das Ruas", active: false },
-    { text: "", active: false },
-    { text: "", active: false },
-  ]);
-
-  const [handfuls, setHandfuls] = useState(Array(10).fill(false));
-  const [bags, setBags] = useState(Array(8).fill(false));
-  const [chest, setChest] = useState(false);
-
-  const toggleArrayItem = (arr: boolean[], setArr: any, index: number) => {
+  const toggleArrayItem = (key: 'hp' | 'stress' | 'hope' | 'handfuls' | 'bags', index: number) => {
+    const arr = data[key];
     const newArr = [...arr];
     newArr[index] = !newArr[index];
-    setArr(newArr);
+    update(key, newArr);
   };
 
   const updateExperience = (index: number, text: string) => {
-    const newExp = [...experiences];
-    newExp[index].text = text;
-    setExperiences(newExp);
+    const newExp = [...data.experiences];
+    newExp[index] = { ...newExp[index], text };
+    update("experiences", newExp);
   };
 
   const toggleExperience = (index: number) => {
-    const newExp = [...experiences];
-    newExp[index].active = !newExp[index].active;
-    setExperiences(newExp);
+    const newExp = [...data.experiences];
+    newExp[index] = { ...newExp[index], active: !newExp[index].active };
+    update("experiences", newExp);
   };
 
   return (
@@ -70,8 +46,8 @@ export function LeftColumn() {
           <div className="w-16 h-12 bg-background border border-primary/20 flex items-center justify-center rounded">
             <input 
               type="text" 
-              value={minorDmg} 
-              onChange={(e) => setMinorDmg(e.target.value)} 
+              value={data.minorDmg} 
+              onChange={(e) => update("minorDmg", e.target.value)} 
               className="w-full text-center bg-transparent text-foreground font-mono text-xl font-bold focus:outline-none" 
             />
           </div>
@@ -86,8 +62,8 @@ export function LeftColumn() {
           <div className="w-16 h-12 bg-background border border-primary/20 flex items-center justify-center rounded">
             <input 
               type="text" 
-              value={majorDmg} 
-              onChange={(e) => setMajorDmg(e.target.value)} 
+              value={data.majorDmg} 
+              onChange={(e) => update("majorDmg", e.target.value)} 
               className="w-full text-center bg-transparent text-foreground font-mono text-xl font-bold focus:outline-none" 
             />
           </div>
@@ -103,11 +79,11 @@ export function LeftColumn() {
           <div className="flex items-center gap-6">
             <div className="font-mono text-primary text-sm tracking-widest w-16">PV</div>
             <div className="flex gap-4">
-              {hp.map((val, i) => (
+              {data.hp.map((val, i) => (
                 <Diamond 
                   key={`hp-${i}`} 
                   checked={val} 
-                  onChange={() => toggleArrayItem(hp, setHp, i)} 
+                  onChange={() => toggleArrayItem('hp', i)} 
                   isCrimson={true} 
                   className={i >= 5 ? "opacity-50" : ""} 
                 />
@@ -118,11 +94,11 @@ export function LeftColumn() {
           <div className="flex items-center gap-6">
             <div className="font-mono text-primary text-sm tracking-widest w-16">ESTRESSE</div>
             <div className="flex gap-4">
-              {stress.map((val, i) => (
+              {data.stress.map((val, i) => (
                 <Diamond 
                   key={`stress-${i}`} 
                   checked={val} 
-                  onChange={() => toggleArrayItem(stress, setStress, i)} 
+                  onChange={() => toggleArrayItem('stress', i)} 
                   isCrimson={true} 
                   className={i >= 6 ? "opacity-50" : ""} 
                 />
@@ -139,8 +115,8 @@ export function LeftColumn() {
         <p className="font-sans text-xs text-muted-foreground italic mb-6">Gaste uma Esperança para usar uma experiência ou ajudar um aliado.</p>
         
         <div className="flex gap-5 mb-8">
-          {hope.map((val, i) => (
-            <Diamond key={`hope-${i}`} checked={val} onChange={() => toggleArrayItem(hope, setHope, i)} className="w-5 h-5" />
+          {data.hope.map((val, i) => (
+            <Diamond key={`hope-${i}`} checked={val} onChange={() => toggleArrayItem('hope', i)} className="w-5 h-5" />
           ))}
         </div>
 
@@ -157,7 +133,7 @@ export function LeftColumn() {
         <SectionHeader>Experiência</SectionHeader>
         <Divider />
         <div className="flex flex-col gap-4">
-          {experiences.map((exp, i) => (
+          {data.experiences.map((exp, i) => (
             <div key={i} className="flex items-end gap-4">
               <Diamond checked={exp.active} onChange={() => toggleExperience(i)} className="mb-1" />
               <InputLine value={exp.text} onChange={(v: string) => updateExperience(i, v)} placeholder="Escreva uma experiência..." className="flex-1" />
@@ -174,18 +150,18 @@ export function LeftColumn() {
           <div className="flex items-center gap-4">
             <div className="font-mono text-[10px] text-primary tracking-widest uppercase w-20">Punhados</div>
             <div className="flex flex-wrap gap-2">
-              {handfuls.map((val, i) => <Circle key={`h-${i}`} size={3} checked={val} onChange={() => toggleArrayItem(handfuls, setHandfuls, i)} />)}
+              {data.handfuls.map((val, i) => <Circle key={`h-${i}`} size={3} checked={val} onChange={() => toggleArrayItem('handfuls', i)} />)}
             </div>
           </div>
           <div className="flex items-center gap-4">
             <div className="font-mono text-[10px] text-primary tracking-widest uppercase w-20">Sacos</div>
             <div className="flex flex-wrap gap-2.5">
-              {bags.map((val, i) => <Circle key={`b-${i}`} size={4} checked={val} onChange={() => toggleArrayItem(bags, setBags, i)} />)}
+              {data.bags.map((val, i) => <Circle key={`b-${i}`} size={4} checked={val} onChange={() => toggleArrayItem('bags', i)} />)}
             </div>
           </div>
           <div className="flex items-center gap-4 mt-2">
             <div className="font-mono text-[10px] text-primary tracking-widest uppercase w-20">Baú</div>
-            <Circle size={6} checked={chest} onChange={() => setChest(!chest)} />
+            <Circle size={6} checked={data.chest} onChange={() => update("chest", !data.chest)} />
           </div>
         </div>
       </section>
@@ -232,8 +208,8 @@ export function LeftColumn() {
           {!isPreviewFeatures ? (
             /* ── EDITOR MODE ── */
             <textarea
-              value={features}
-              onChange={(e) => setFeatures(e.target.value)}
+              value={data.features}
+              onChange={(e) => update("features", e.target.value)}
               placeholder="Escreva as habilidades de classe aqui... (suporte a Markdown)"
               className={[
                 'w-full flex-1 bg-transparent text-foreground font-sans text-sm leading-relaxed',
@@ -245,7 +221,7 @@ export function LeftColumn() {
           ) : (
             /* ── PREVIEW MODE ── */
             <div className="p-4 flex-1 overflow-y-auto min-h-0">
-              {features.trim() ? (
+              {data.features.trim() ? (
                 <div
                   className={[
                     'prose prose-invert max-w-none',
@@ -257,7 +233,7 @@ export function LeftColumn() {
                     'prose-ul:text-foreground/85 prose-ol:text-foreground/85',
                   ].join(' ')}
                 >
-                  <ReactMarkdown>{features}</ReactMarkdown>
+                  <ReactMarkdown>{data.features}</ReactMarkdown>
                 </div>
               ) : (
                 <p className="text-muted-foreground/40 italic font-sans text-sm text-center pt-8">

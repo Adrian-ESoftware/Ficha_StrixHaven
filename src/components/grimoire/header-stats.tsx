@@ -1,34 +1,13 @@
-import { useState } from 'react';
+import { useCharacter } from '@/lib/character-context';
 import { InputLine, StatShield } from './shared';
 
-interface HeaderStatsProps {
-  name: string;
-  setName: (v: string) => void;
-}
-
-export function HeaderStats({ name, setName }: HeaderStatsProps) {
-  const [pronouns, setPronouns] = useState("Ela/Dela");
-  const [heritage, setHeritage] = useState("Elfo");
-  const [subclass, setSubclass] = useState("Escola de Evocação");
-  const [level, setLevel] = useState("1");
-
-  const [stats, setStats] = useState({
-    agility: "+0",
-    strength: "-1",
-    finesse: "+1",
-    instinct: "+2",
-    presence: "+0",
-    knowledge: "+3"
-  });
-
-  const [evasion, setEvasion] = useState("11");
-  const [armor, setArmor] = useState("+0");
-  const [armorPoints, setArmorPoints] = useState([false, false, false, false, false, false]);
+export function HeaderStats() {
+  const { data, update, updateNested } = useCharacter();
 
   const toggleArmorPoint = (index: number) => {
-    const newArmorPoints = [...armorPoints];
+    const newArmorPoints = [...data.armorPoints];
     newArmorPoints[index] = !newArmorPoints[index];
-    setArmorPoints(newArmorPoints);
+    update("armorPoints", newArmorPoints);
   };
 
   return (
@@ -55,7 +34,7 @@ export function HeaderStats({ name, setName }: HeaderStatsProps) {
           {/* TOP ROW: NAME & LEVEL */}
           <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4 border-b border-primary/10 pb-4">
             <div className="flex flex-col justify-end w-full sm:w-auto">
-              <InputLine label="Nome" value={name} onChange={setName} className="w-full sm:w-64 font-serif text-lg font-bold" />
+              <InputLine label="Nome" value={data.name} onChange={(v: string) => update("name", v)} className="w-full sm:w-64 font-serif text-lg font-bold" />
               <div className="font-mono text-[9px] tracking-widest text-primary mt-1.5 uppercase">Códice & Esplendor</div>
             </div>
             
@@ -65,8 +44,8 @@ export function HeaderStats({ name, setName }: HeaderStatsProps) {
               <div className="relative w-16 h-16 border-2 border-primary clip-shield flex items-center justify-center bg-card shadow-[0_0_15px_rgba(233,193,118,0.2)]">
                 <input 
                   type="text"
-                  value={level}
-                  onChange={(e) => setLevel(e.target.value)}
+                  value={data.level}
+                  onChange={(e) => update("level", e.target.value)}
                   className="w-full text-center bg-transparent text-primary font-mono text-3xl font-bold focus:outline-none"
                 />
               </div>
@@ -75,9 +54,9 @@ export function HeaderStats({ name, setName }: HeaderStatsProps) {
 
           {/* BOTTOM ROW: PRONOUNS, HERITAGE, SUBCLASS */}
           <div className="grid grid-cols-1 sm:grid-cols-3 gap-6">
-            <InputLine label="Pronomes" value={pronouns} onChange={setPronouns} />
-            <InputLine label="Herança" value={heritage} onChange={setHeritage} />
-            <InputLine label="Subclasse" value={subclass} onChange={setSubclass} />
+            <InputLine label="Pronomes" value={data.pronouns} onChange={(v: string) => update("pronouns", v)} />
+            <InputLine label="Herança" value={data.heritage} onChange={(v: string) => update("heritage", v)} />
+            <InputLine label="Subclasse" value={data.subclass} onChange={(v: string) => update("subclass", v)} />
           </div>
 
         </div>
@@ -96,8 +75,8 @@ export function HeaderStats({ name, setName }: HeaderStatsProps) {
               <div className="w-16 h-16 rounded-full border border-primary/30 flex items-center justify-center bg-card group-hover:border-primary transition-colors">
                 <input 
                   type="text"
-                  value={evasion}
-                  onChange={(e) => setEvasion(e.target.value)}
+                  value={data.evasion}
+                  onChange={(e) => update("evasion", e.target.value)}
                   className="w-full text-center bg-transparent text-foreground font-mono text-2xl focus:outline-none"
                 />
               </div>
@@ -114,8 +93,8 @@ export function HeaderStats({ name, setName }: HeaderStatsProps) {
               <div className="w-16 h-16 clip-shield border border-primary/30 flex items-center justify-center bg-card group-hover:border-primary transition-colors">
                 <input 
                   type="text"
-                  value={armor}
-                  onChange={(e) => setArmor(e.target.value)}
+                  value={data.armor}
+                  onChange={(e) => update("armor", e.target.value)}
                   className="w-full text-center bg-transparent text-foreground font-mono text-2xl focus:outline-none"
                 />
               </div>
@@ -130,7 +109,7 @@ export function HeaderStats({ name, setName }: HeaderStatsProps) {
             <div className="text-primary font-mono text-[11px] font-bold tracking-widest uppercase mb-2 text-center">Pts. Armadura</div>
             <div className="w-20 h-24 flex items-center justify-center">
               <div className="grid grid-cols-2 gap-1.5 p-2 border border-primary/30 rounded bg-card group-hover:border-primary transition-colors">
-                {armorPoints.map((active, i) => (
+                {data.armorPoints.map((active, i) => (
                   <button 
                     key={i} 
                     onClick={() => toggleArmorPoint(i)}
@@ -155,12 +134,12 @@ export function HeaderStats({ name, setName }: HeaderStatsProps) {
 
         {/* 6 STAT SHIELDS */}
         <div className="grid grid-cols-3 md:grid-cols-6 gap-4 md:gap-8 flex-1 justify-items-center">
-          <StatShield label="Agilidade" value={stats.agility} onChange={(v: string) => setStats({...stats, agility: v})} subLabels={["Correr", "Saltar", "Manobrar"]} />
-          <StatShield label="Força" value={stats.strength} onChange={(v: string) => setStats({...stats, strength: v})} subLabels={["Levantar", "Quebrar", "Agarrar"]} />
-          <StatShield label="Finesse" value={stats.finesse} onChange={(v: string) => setStats({...stats, finesse: v})} subLabels={["Controlar", "Ocultar", "Oficiar"]} />
-          <StatShield label="Instinto" value={stats.instinct} onChange={(v: string) => setStats({...stats, instinct: v})} subLabels={["Perceber", "Sentir", "Navegar"]} />
-          <StatShield label="Presença" value={stats.presence} onChange={(v: string) => setStats({...stats, presence: v})} subLabels={["Cativar", "Atuar", "Enganar"]} />
-          <StatShield label="Conhecimento" value={stats.knowledge} onChange={(v: string) => setStats({...stats, knowledge: v})} subLabels={["Recordar", "Analisar", "Compreender"]} />
+          <StatShield label="Agilidade" value={data.stats.agility} onChange={(v: string) => updateNested("stats", { agility: v })} subLabels={["Correr", "Saltar", "Manobrar"]} />
+          <StatShield label="Força" value={data.stats.strength} onChange={(v: string) => updateNested("stats", { strength: v })} subLabels={["Levantar", "Quebrar", "Agarrar"]} />
+          <StatShield label="Finesse" value={data.stats.finesse} onChange={(v: string) => updateNested("stats", { finesse: v })} subLabels={["Controlar", "Ocultar", "Oficiar"]} />
+          <StatShield label="Instinto" value={data.stats.instinct} onChange={(v: string) => updateNested("stats", { instinct: v })} subLabels={["Perceber", "Sentir", "Navegar"]} />
+          <StatShield label="Presença" value={data.stats.presence} onChange={(v: string) => updateNested("stats", { presence: v })} subLabels={["Cativar", "Atuar", "Enganar"]} />
+          <StatShield label="Conhecimento" value={data.stats.knowledge} onChange={(v: string) => updateNested("stats", { knowledge: v })} subLabels={["Recordar", "Analisar", "Compreender"]} />
         </div>
 
       </div>

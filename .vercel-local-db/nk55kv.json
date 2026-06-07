@@ -1,0 +1,153 @@
+{
+  "name": "Elara",
+  "pronouns": "Ela/Dela",
+  "heritage": "Elfo",
+  "subclass": "Escola de Evocação",
+  "level": "1",
+  "stats": {
+    "agility": "+0",
+    "strength": "-1",
+    "finesse": "+1",
+    "instinct": "+2",
+    "presence": "+0",
+    "knowledge": "+3"
+  },
+  "evasion": "11",
+  "armor": "+0",
+  "armorPoints": [
+    false,
+    false,
+    false,
+    false,
+    false,
+    false
+  ],
+  "hp": [
+    false,
+    false,
+    false,
+    false,
+    false,
+    false,
+    false,
+    false,
+    false,
+    false
+  ],
+  "stress": [
+    false,
+    false,
+    false,
+    false,
+    false,
+    false,
+    false,
+    false,
+    false,
+    false
+  ],
+  "hope": [
+    false,
+    false,
+    false,
+    false,
+    false,
+    false
+  ],
+  "minorDmg": "7",
+  "majorDmg": "14",
+  "features": "## Prestidigitação\n\nVocê pode realizar efeitos mágicos sutis e inofensivos à vontade. Por exemplo, você pode mudar a cor de um objeto, criar um odor, acender uma vela, fazer um objeto minúsculo flutuar, iluminar uma sala ou consertar um pequeno objeto.\n\n## Padrões Estranhos\n\nEscolha um número entre 1 e 12. Quando você rolar esse número em um Dado de Dualidade, ganhe uma Esperança ou limpe um Estresse. Você pode mudar este número quando realizar um descanso longo.",
+  "experiences": [
+    {
+      "text": "Aprendiz da Torre Alta",
+      "active": false
+    },
+    {
+      "text": "Sobrevivente das Ruas",
+      "active": false
+    },
+    {
+      "text": "",
+      "active": false
+    },
+    {
+      "text": "",
+      "active": false
+    }
+  ],
+  "handfuls": [
+    false,
+    false,
+    false,
+    false,
+    false,
+    false,
+    false,
+    false,
+    false,
+    false
+  ],
+  "bags": [
+    false,
+    false,
+    false,
+    false,
+    false,
+    false,
+    false,
+    false
+  ],
+  "chest": false,
+  "proficiency": [
+    true,
+    false,
+    false,
+    false,
+    false,
+    false
+  ],
+  "primaryWeapon": {
+    "name": "Cajado Arcano",
+    "trait": "Agilidade/Magia",
+    "damage": "d8 Mágico",
+    "feature": "Alcance: Longo"
+  },
+  "secondaryWeapon": {
+    "name": "Lâmina Rúnica",
+    "trait": "Finesse/Corpo a Corpo",
+    "damage": "d6 Físico",
+    "feature": "Combate Próximo"
+  },
+  "activeArmor": {
+    "name": "Manto do Conjurador",
+    "thresholds": "1",
+    "score": "+1",
+    "feature": "Leve"
+  },
+  "inventory": [
+    "Bolsa de componentes de feitiço",
+    "Frasco de bebida anã",
+    "Mapa antigo",
+    "",
+    "",
+    ""
+  ],
+  "invWeapon1": {
+    "name": "",
+    "trait": "",
+    "damage": "",
+    "feature": "",
+    "isPrimary": false,
+    "isSecondary": false
+  },
+  "invWeapon2": {
+    "name": "",
+    "trait": "",
+    "damage": "",
+    "feature": "",
+    "isPrimary": false,
+    "isSecondary": false
+  },
+  "lore": "## Origem\n\nNascida nas florestas prateadas de Mirethil, Elara sempre teve uma ligação profunda com as forças arcanas que permeiam o mundo. Seus olhos cor de âmbar pareciam enxergar além do véu da realidade desde tenra idade.\n\n## A Torre Alta\n\nAos doze anos, foi aceita como aprendiz na prestigiosa Torre Alta, onde passou anos devorando tomos antigos e dominando as artes da Evocação. Seu dom para manipular energias elementares era incomum até mesmo entre os elfos mais talentosos.\n\n## O Exílio\n\nUm experimento mal sucedido com o *Grimório das Eras Perdidas* deixou marcas invisíveis em sua alma — e a obrigou a abandonar a Torre antes de completar seus estudos. Agora vaga pelo mundo, buscando respostas para as questões que nenhum mestre ousou responder.\n\n> *\"O conhecimento sem fronteiras é o único caminho verdadeiro.\"*\n",
+  "levelUpChecks": {}
+}

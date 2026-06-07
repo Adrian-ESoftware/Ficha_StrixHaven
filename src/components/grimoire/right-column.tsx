@@ -1,23 +1,18 @@
-import { useState } from 'react';
+import { useCharacter } from '@/lib/character-context';
 import { SectionHeader, Divider, InputLine, Diamond, Circle } from './shared';
 
 export function RightColumn() {
-  const [proficiency, setProficiency] = useState([true, false, false, false, false, false]);
-  
-  const [primaryWeapon, setPrimaryWeapon] = useState({ name: "Cajado Arcano", trait: "Agilidade/Magia", damage: "d8 Mágico", feature: "Alcance: Longo" });
-  const [secondaryWeapon, setSecondaryWeapon] = useState({ name: "Lâmina Rúnica", trait: "Finesse/Corpo a Corpo", damage: "d6 Físico", feature: "Combate Próximo" });
-  
-  const [armor, setArmor] = useState({ name: "Manto do Conjurador", thresholds: "1", score: "+1", feature: "Leve" });
+  const { data, update, updateNested } = useCharacter();
 
-  const [inventory, setInventory] = useState(["Bolsa de componentes de feitiço", "Frasco de bebida anã", "Mapa antigo", "", "", ""]);
-  
-  const [invWeapon1, setInvWeapon1] = useState({ name: "", trait: "", damage: "", feature: "", isPrimary: false, isSecondary: false });
-  const [invWeapon2, setInvWeapon2] = useState({ name: "", trait: "", damage: "", feature: "", isPrimary: false, isSecondary: false });
-
-  const updateArray = (arr: any[], setArr: any, index: number, val: any) => {
+  const updateArray = (key: 'inventory' | 'proficiency', index: number, val: any) => {
+    const arr = data[key];
     const newArr = [...arr];
     newArr[index] = val;
-    setArr(newArr);
+    if (key === 'inventory') {
+      update('inventory', newArr as string[]);
+    } else {
+      update('proficiency', newArr as boolean[]);
+    }
   };
 
   const WeaponBlock = ({ weapon, setWeapon, title }: any) => (
@@ -71,19 +66,19 @@ export function RightColumn() {
           <SectionHeader>Armas Ativas</SectionHeader>
           <div className="flex items-center gap-2 mb-1">
             <span className="font-mono text-[10px] text-primary tracking-widest uppercase mr-2">Proficiência</span>
-            {proficiency.map((val, i) => (
+            {data.proficiency.map((val, i) => (
               <Circle key={i} size={3} checked={val} onChange={() => {
-                const p = [...proficiency];
+                const p = [...data.proficiency];
                 p[i] = !p[i];
-                setProficiency(p);
+                update("proficiency", p);
               }} />
             ))}
           </div>
         </div>
         <Divider />
         
-        <WeaponBlock title="PRIMÁRIA" weapon={primaryWeapon} setWeapon={setPrimaryWeapon} />
-        <WeaponBlock title="SECUNDÁRIA" weapon={secondaryWeapon} setWeapon={setSecondaryWeapon} />
+        <WeaponBlock title="PRIMÁRIA" weapon={data.primaryWeapon} setWeapon={(w: any) => update("primaryWeapon", w)} />
+        <WeaponBlock title="SECUNDÁRIA" weapon={data.secondaryWeapon} setWeapon={(w: any) => update("secondaryWeapon", w)} />
       </section>
 
       {/* ACTIVE ARMOR */}
@@ -94,13 +89,13 @@ export function RightColumn() {
         <div className="bg-background border border-primary/20 p-5 relative mb-2">
           <div className="flex flex-col gap-4">
             <div className="flex flex-col sm:flex-row gap-4">
-              <InputLine label="Nome" value={armor.name} onChange={(v: string) => setArmor({...armor, name: v})} className="flex-[2] min-w-[150px]" />
+              <InputLine label="Nome" value={data.activeArmor.name} onChange={(v: string) => updateNested("activeArmor", { name: v })} className="flex-[2] min-w-[150px]" />
               <div className="flex gap-4 flex-1">
-                <InputLine label="Limiares Base" value={armor.thresholds} onChange={(v: string) => setArmor({...armor, thresholds: v})} className="flex-1 min-w-[80px]" center />
-                <InputLine label="Valor Base" value={armor.score} onChange={(v: string) => setArmor({...armor, score: v})} className="flex-1 min-w-[80px]" center />
+                <InputLine label="Limiares Base" value={data.activeArmor.thresholds} onChange={(v: string) => updateNested("activeArmor", { thresholds: v })} className="flex-1 min-w-[80px]" center />
+                <InputLine label="Valor Base" value={data.activeArmor.score} onChange={(v: string) => updateNested("activeArmor", { score: v })} className="flex-1 min-w-[80px]" center />
               </div>
             </div>
-            <InputLine label="Característica" value={armor.feature} onChange={(v: string) => setArmor({...armor, feature: v})} />
+            <InputLine label="Característica" value={data.activeArmor.feature} onChange={(v: string) => updateNested("activeArmor", { feature: v })} />
           </div>
         </div>
       </section>
@@ -111,13 +106,13 @@ export function RightColumn() {
         <Divider />
         
         <div className="flex flex-col gap-3 mb-8">
-          {inventory.map((item, i) => (
-            <InputLine key={i} value={item} onChange={(v: string) => updateArray(inventory, setInventory, i, v)} placeholder={`Item ${i+1}`} />
+          {data.inventory.map((item, i) => (
+            <InputLine key={i} value={item} onChange={(v: string) => updateArray('inventory', i, v)} placeholder={`Item ${i+1}`} />
           ))}
         </div>
 
-        <InvWeaponBlock weapon={invWeapon1} setWeapon={setInvWeapon1} />
-        <InvWeaponBlock weapon={invWeapon2} setWeapon={setInvWeapon2} />
+        <InvWeaponBlock weapon={data.invWeapon1} setWeapon={(w: any) => update("invWeapon1", w)} />
+        <InvWeaponBlock weapon={data.invWeapon2} setWeapon={(w: any) => update("invWeapon2", w)} />
         
       </section>
 

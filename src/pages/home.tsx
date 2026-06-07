@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { HeaderStats } from '@/components/grimoire/header-stats';
 import { LeftColumn } from '@/components/grimoire/left-column';
 import { RightColumn } from '@/components/grimoire/right-column';
@@ -6,9 +6,44 @@ import { LoreSection } from '@/components/grimoire/lore-section';
 import { LevelUpSection } from '@/components/grimoire/level-up-section';
 import { Divider } from '@/components/grimoire/shared';
 import conceptImg from '@/components/imgs/concept.png';
+import { CharacterProvider, useCharacter } from '@/lib/character-context';
 
 export default function Home() {
-  const [name, setName] = useState('Elara');
+  const [characterId, setCharacterId] = useState<string | null>(null);
+
+  useEffect(() => {
+    const searchParams = new URLSearchParams(window.location.search);
+    let id = searchParams.get('id');
+    
+    if (!id) {
+      // Gerar um ID aleatorio amigavel de 6 digitos
+      id = Math.random().toString(36).substring(2, 8);
+      const newUrl = `${window.location.pathname}?id=${id}`;
+      window.history.replaceState({ path: newUrl }, '', newUrl);
+    }
+    setCharacterId(id);
+  }, []);
+
+  if (!characterId) {
+    return (
+      <div className="min-h-[100dvh] flex items-center justify-center bg-background">
+        <div className="flex flex-col items-center gap-4">
+          <div className="w-8 h-8 border-2 border-primary border-t-transparent rounded-full animate-spin" />
+          <span className="font-mono text-primary text-sm tracking-widest uppercase">Inicializando Grimório...</span>
+        </div>
+      </div>
+    );
+  }
+
+  return (
+    <CharacterProvider characterId={characterId}>
+      <GrimoireSheet />
+    </CharacterProvider>
+  );
+}
+
+function GrimoireSheet() {
+  const { data, saveStatus, characterId } = useCharacter();
   const [isOverlayOpen, setIsOverlayOpen] = useState(false);
 
   return (
@@ -24,9 +59,31 @@ export default function Home() {
         <div className="absolute -bottom-4 -left-4 w-12 h-12 border-b-2 border-l-2 border-primary/40" />
         <div className="absolute -bottom-4 -right-4 w-12 h-12 border-b-2 border-r-2 border-primary/40" />
 
+        {/* Auto-save & Status indicator */}
+        <div className="absolute top-2 right-4 flex items-center gap-3 z-20">
+          <span className="font-mono text-[9px] text-muted-foreground/60 tracking-wider">
+            ID: <span className="text-primary/70 select-all">{characterId}</span>
+          </span>
+          {saveStatus === 'saving' && (
+            <span className="text-primary animate-pulse text-[10px] font-mono tracking-widest uppercase">
+              ✦ Salvando...
+            </span>
+          )}
+          {saveStatus === 'saved' && (
+            <span className="text-emerald-400 text-[10px] font-mono tracking-widest uppercase">
+              ✓ Salvo
+            </span>
+          )}
+          {saveStatus === 'error' && (
+            <span className="text-red-400 text-[10px] font-mono tracking-widest uppercase">
+              ⚠ Erro ao salvar
+            </span>
+          )}
+        </div>
+
         <div className="bg-card/50 backdrop-blur-sm border border-primary/20 p-6 md:p-10 shadow-2xl">
           
-          <HeaderStats name={name} setName={setName} />
+          <HeaderStats />
 
           <div className="flex flex-col lg:flex-row mt-12 gap-8 lg:gap-0 items-stretch">
             <div className="w-full lg:w-[45%] flex flex-col">
@@ -44,7 +101,7 @@ export default function Home() {
           </div>
 
           {/* Lore Section */}
-          <LoreSection name={name} />
+          <LoreSection />
 
           {/* Level Up separator */}
           <div className="mt-12">

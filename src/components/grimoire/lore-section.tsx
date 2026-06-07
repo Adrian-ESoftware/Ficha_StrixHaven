@@ -1,28 +1,10 @@
 import { useState } from 'react';
 import ReactMarkdown from 'react-markdown';
 import { SectionHeader, Divider } from './shared';
+import { useCharacter } from '@/lib/character-context';
 
-interface LoreSectionProps {
-  name: string;
-}
-
-const PLACEHOLDER_LORE = `## Origem
-
-Nascida nas florestas prateadas de Mirethil, Elara sempre teve uma ligação profunda com as forças arcanas que permeiam o mundo. Seus olhos cor de âmbar pareciam enxergar além do véu da realidade desde tenra idade.
-
-## A Torre Alta
-
-Aos doze anos, foi aceita como aprendiz na prestigiosa Torre Alta, onde passou anos devorando tomos antigos e dominando as artes da Evocação. Seu dom para manipular energias elementares era incomum até mesmo entre os elfos mais talentosos.
-
-## O Exílio
-
-Um experimento mal sucedido com o *Grimório das Eras Perdidas* deixou marcas invisíveis em sua alma — e a obrigou a abandonar a Torre antes de completar seus estudos. Agora vaga pelo mundo, buscando respostas para as questões que nenhum mestre ousou responder.
-
-> *"O conhecimento sem fronteiras é o único caminho verdadeiro."*
-`;
-
-export function LoreSection({ name }: LoreSectionProps) {
-  const [lore, setLore] = useState(PLACEHOLDER_LORE);
+export function LoreSection() {
+  const { data, update } = useCharacter();
   const [isPreview, setIsPreview] = useState(true);
 
   return (
@@ -32,7 +14,7 @@ export function LoreSection({ name }: LoreSectionProps) {
         <div>
           <SectionHeader>
             Lore de{' '}
-            <span className="text-foreground/80">{name || 'Personagem'}</span>
+            <span className="text-foreground/80">{data.name || 'Personagem'}</span>
           </SectionHeader>
           <p className="font-sans text-xs text-muted-foreground italic mt-1">
             Histórico, motivações e segredos do personagem — suporta formatação Markdown.
@@ -90,8 +72,8 @@ export function LoreSection({ name }: LoreSectionProps) {
               ))}
             </div>
             <textarea
-              value={lore}
-              onChange={(e) => setLore(e.target.value)}
+              value={data.lore}
+              onChange={(e) => update("lore", e.target.value)}
               placeholder="Escreva o lore do personagem aqui... (suporte a Markdown)"
               className={[
                 'w-full flex-1 bg-transparent text-foreground font-sans text-sm leading-relaxed',
@@ -102,13 +84,13 @@ export function LoreSection({ name }: LoreSectionProps) {
             />
             {/* Character count */}
             <div className="absolute bottom-3 right-5 font-mono text-[9px] text-muted-foreground/40 select-none bg-card/85 px-1.5 py-0.5 rounded">
-              {lore.length} caracteres
+              {data.lore.length} caracteres
             </div>
           </div>
         ) : (
           /* ── PREVIEW MODE ── */
           <div className="p-6 flex-1 overflow-y-auto min-h-0">
-            {lore.trim() ? (
+            {data.lore.trim() ? (
               <div
                 className={[
                   'prose prose-invert max-w-none',
@@ -128,7 +110,7 @@ export function LoreSection({ name }: LoreSectionProps) {
                   'prose-hr:border-primary/20',
                 ].join(' ')}
               >
-                <ReactMarkdown>{lore}</ReactMarkdown>
+                <ReactMarkdown>{data.lore}</ReactMarkdown>
               </div>
             ) : (
               <p className="text-muted-foreground/40 italic font-sans text-sm text-center pt-16">
