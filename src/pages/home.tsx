@@ -91,8 +91,19 @@ function GrimoireSheet() {
 
         <div
           aria-disabled={!canEdit}
-          inert={!canEdit}
-          className={`bg-card/50 backdrop-blur-sm border border-primary/20 p-6 md:p-10 shadow-2xl transition-opacity ${canEdit ? '' : 'pointer-events-none opacity-75'}`}
+          onClickCapture={(event) => {
+            if (!canEdit && (event.target as HTMLElement).closest('button, input, textarea, [contenteditable="true"]')) {
+              event.preventDefault();
+              event.stopPropagation();
+            }
+          }}
+          onKeyDownCapture={(event) => {
+            if (!canEdit && (event.target as HTMLElement).closest('button, input, textarea, [contenteditable="true"]')) {
+              event.preventDefault();
+              event.stopPropagation();
+            }
+          }}
+          className="bg-card/50 backdrop-blur-sm border border-primary/20 p-6 md:p-10 shadow-2xl"
         >
           
           <HeaderStats />
