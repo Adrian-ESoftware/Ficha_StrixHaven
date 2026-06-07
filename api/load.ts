@@ -30,7 +30,11 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
 
     // Fetch the blob content from its URL
     const blobUrl = blobs[0].url;
-    const response = await fetch(blobUrl);
+    const response = await fetch(blobUrl, {
+      headers: {
+        'Authorization': `Bearer ${token}`
+      }
+    });
     const data = await response.json();
 
     return res.status(200).json(data);
