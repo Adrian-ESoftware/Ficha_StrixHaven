@@ -53,21 +53,43 @@ export function Circle({ checked, onChange, size = 4, className = "" }: any) {
   );
 }
 
-export function StatShield({ label, subLabels, value, onChange }: any) {
+const statCheckColors = [
+  'border-primary data-[checked=true]:bg-primary data-[checked=true]:shadow-[0_0_6px_rgba(233,193,118,0.6)]',
+  'border-secondary data-[checked=true]:bg-secondary data-[checked=true]:shadow-[0_0_6px_rgba(205,122,255,0.6)]',
+  'border-emerald-400 data-[checked=true]:bg-emerald-400 data-[checked=true]:shadow-[0_0_6px_rgba(52,211,153,0.6)]',
+];
+
+export function StatShield({ label, subLabels, value, onChange, checks = [false, false, false], onCheckChange }: any) {
   return (
     <div className="flex flex-col items-center group relative">
       <div className="text-primary font-mono text-[11px] font-bold tracking-widest uppercase mb-2">{label}</div>
-      
-      <div className="relative w-20 h-24 bg-card border border-primary/30 clip-pentagon flex items-center justify-center group-hover:border-primary transition-colors overflow-hidden">
-        {/* Subtle inner glow */}
-        <div className="absolute inset-0 bg-primary/5 opacity-0 group-hover:opacity-100 transition-opacity" />
-        
-        <input 
-          type="text"
-          value={value}
-          onChange={(e) => onChange(e.target.value)}
-          className="w-full text-center bg-transparent text-foreground font-mono text-4xl font-bold focus:outline-none z-10"
-        />
+
+      <div className="relative">
+        <div className="absolute right-full top-1/2 -translate-y-1/2 mr-2 flex flex-col gap-1.5">
+          {statCheckColors.map((color, index) => (
+            <button
+              key={index}
+              type="button"
+              aria-label={`${label}: marcador ${index + 1}`}
+              aria-pressed={Boolean(checks[index])}
+              data-checked={Boolean(checks[index])}
+              onClick={() => onCheckChange?.(index)}
+              className={`h-3 w-3 border bg-transparent opacity-70 transition-all hover:opacity-100 data-[checked=true]:opacity-100 ${color}`}
+            />
+          ))}
+        </div>
+
+        <div className="relative w-20 h-24 bg-card border border-primary/30 clip-pentagon flex items-center justify-center group-hover:border-primary transition-colors overflow-hidden">
+          {/* Subtle inner glow */}
+          <div className="absolute inset-0 bg-primary/5 opacity-0 group-hover:opacity-100 transition-opacity" />
+
+          <input
+            type="text"
+            value={value}
+            onChange={(e) => onChange(e.target.value)}
+            className="w-full text-center bg-transparent text-foreground font-mono text-4xl font-bold focus:outline-none z-10"
+          />
+        </div>
       </div>
       
       <div className="mt-3 flex flex-col items-center gap-0.5">

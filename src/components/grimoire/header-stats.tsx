@@ -4,11 +4,18 @@ import perfilImg from '@/components/imgs/perfil.png';
 
 export function HeaderStats() {
   const { data, update, updateNested } = useCharacter();
+  type StatKey = keyof typeof data.stats;
 
   const toggleArmorPoint = (index: number) => {
     const newArmorPoints = [...data.armorPoints];
     newArmorPoints[index] = !newArmorPoints[index];
     update("armorPoints", newArmorPoints);
+  };
+
+  const toggleStatCheck = (stat: StatKey, index: number) => {
+    const checks = Array.from({ length: 3 }, (_, checkIndex) => Boolean(data.statChecks?.[stat]?.[checkIndex]));
+    checks[index] = !checks[index];
+    update("statChecks", { ...data.statChecks, [stat]: checks });
   };
 
   return (
@@ -135,12 +142,12 @@ export function HeaderStats() {
 
         {/* 6 STAT SHIELDS */}
         <div className="grid grid-cols-3 md:grid-cols-6 gap-4 md:gap-8 flex-1 justify-items-center">
-          <StatShield label="Agilidade" value={data.stats.agility} onChange={(v: string) => updateNested("stats", { agility: v })} subLabels={["Correr", "Saltar", "Manobrar"]} />
-          <StatShield label="Força" value={data.stats.strength} onChange={(v: string) => updateNested("stats", { strength: v })} subLabels={["Levantar", "Quebrar", "Agarrar"]} />
-          <StatShield label="Finesse" value={data.stats.finesse} onChange={(v: string) => updateNested("stats", { finesse: v })} subLabels={["Controlar", "Ocultar", "Oficiar"]} />
-          <StatShield label="Instinto" value={data.stats.instinct} onChange={(v: string) => updateNested("stats", { instinct: v })} subLabels={["Perceber", "Sentir", "Navegar"]} />
-          <StatShield label="Presença" value={data.stats.presence} onChange={(v: string) => updateNested("stats", { presence: v })} subLabels={["Cativar", "Atuar", "Enganar"]} />
-          <StatShield label="Conhecimento" value={data.stats.knowledge} onChange={(v: string) => updateNested("stats", { knowledge: v })} subLabels={["Recordar", "Analisar", "Compreender"]} />
+          <StatShield label="Agilidade" value={data.stats.agility} onChange={(v: string) => updateNested("stats", { agility: v })} checks={data.statChecks?.agility} onCheckChange={(i: number) => toggleStatCheck("agility", i)} subLabels={["Correr", "Saltar", "Manobrar"]} />
+          <StatShield label="Força" value={data.stats.strength} onChange={(v: string) => updateNested("stats", { strength: v })} checks={data.statChecks?.strength} onCheckChange={(i: number) => toggleStatCheck("strength", i)} subLabels={["Levantar", "Quebrar", "Agarrar"]} />
+          <StatShield label="Finesse" value={data.stats.finesse} onChange={(v: string) => updateNested("stats", { finesse: v })} checks={data.statChecks?.finesse} onCheckChange={(i: number) => toggleStatCheck("finesse", i)} subLabels={["Controlar", "Ocultar", "Oficiar"]} />
+          <StatShield label="Instinto" value={data.stats.instinct} onChange={(v: string) => updateNested("stats", { instinct: v })} checks={data.statChecks?.instinct} onCheckChange={(i: number) => toggleStatCheck("instinct", i)} subLabels={["Perceber", "Sentir", "Navegar"]} />
+          <StatShield label="Presença" value={data.stats.presence} onChange={(v: string) => updateNested("stats", { presence: v })} checks={data.statChecks?.presence} onCheckChange={(i: number) => toggleStatCheck("presence", i)} subLabels={["Cativar", "Atuar", "Enganar"]} />
+          <StatShield label="Conhecimento" value={data.stats.knowledge} onChange={(v: string) => updateNested("stats", { knowledge: v })} checks={data.statChecks?.knowledge} onCheckChange={(i: number) => toggleStatCheck("knowledge", i)} subLabels={["Recordar", "Analisar", "Compreender"]} />
         </div>
 
       </div>

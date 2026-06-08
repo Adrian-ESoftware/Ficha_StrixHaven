@@ -17,6 +17,7 @@ export interface CharacterData {
     presence: string;
     knowledge: string;
   };
+  statChecks: Record<keyof CharacterData['stats'], boolean[]>;
   evasion: string;
   armor: string;
   armorPoints: boolean[];
@@ -91,6 +92,14 @@ export const DEFAULT_CHARACTER: CharacterData = {
   subclass: "Escola de Evocação",
   level: "1",
   stats: { agility: "+0", strength: "-1", finesse: "+1", instinct: "+2", presence: "+0", knowledge: "+3" },
+  statChecks: {
+    agility: [false, false, false],
+    strength: [false, false, false],
+    finesse: [false, false, false],
+    instinct: [false, false, false],
+    presence: [false, false, false],
+    knowledge: [false, false, false],
+  },
   evasion: "11",
   armor: "+0",
   armorPoints: [false, false, false, false, false, false],

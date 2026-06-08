@@ -6,6 +6,7 @@ import { LoreSection } from '@/components/grimoire/lore-section';
 import { LevelUpSection } from '@/components/grimoire/level-up-section';
 import { Divider } from '@/components/grimoire/shared';
 import conceptImg from '@/components/imgs/concept.png';
+import cardGalleryImg from '@/components/imgs/pagina_de_cartas.png';
 import { CharacterProvider, useCharacter } from '@/lib/character-context';
 
 export default function Home() {
@@ -45,6 +46,7 @@ export default function Home() {
 function GrimoireSheet() {
   const { saveStatus, characterId, canEdit, unlock, lock } = useCharacter();
   const [isOverlayOpen, setIsOverlayOpen] = useState(false);
+  const [isCardGalleryOpen, setIsCardGalleryOpen] = useState(false);
   const [isPasswordOpen, setIsPasswordOpen] = useState(false);
 
   return (
@@ -149,6 +151,18 @@ function GrimoireSheet() {
         </svg>
       </button>
 
+      {/* Floating page-flip button for Card Gallery */}
+      <button
+        onClick={() => setIsCardGalleryOpen(true)}
+        className="fixed left-0 top-1/2 -translate-y-1/2 z-40 bg-card/90 backdrop-blur-md border-y-2 border-r-2 border-primary text-primary hover:text-foreground pr-4 pl-3 py-8 rounded-r-2xl transition-all duration-300 shadow-[0_0_25px_rgba(233,193,118,0.25)] hover:shadow-[0_0_35px_rgba(233,193,118,0.45)] hover:pr-6 group cursor-pointer flex flex-col items-center gap-2"
+        title="Abrir Galeria de Cartas"
+      >
+        <span className="font-mono text-[11px] font-bold tracking-widest uppercase [writing-mode:vertical-rl] rotate-180 text-primary group-hover:text-foreground transition-colors">Galeria de Cartas</span>
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="3" className="w-6 h-6 animate-pulse group-hover:-translate-x-0.5 transition-transform mt-1">
+          <path strokeLinecap="round" strokeLinejoin="round" d="M15 5l-7 7 7 7" />
+        </svg>
+      </button>
+
       {/* Overlay Modal for Concept Art */}
       {isOverlayOpen && (
         <div 
@@ -178,6 +192,35 @@ function GrimoireSheet() {
               title="Fechar"
             >
               <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" className="w-4 h-4">
+                <path d="M18 6L6 18M6 6l12 12" />
+              </svg>
+            </button>
+          </div>
+        </div>
+      )}
+
+      {/* Overlay Modal for Card Gallery */}
+      {isCardGalleryOpen && (
+        <div
+          className="fixed inset-0 bg-background/95 backdrop-blur-md z-50 flex items-center justify-center p-2 md:p-6 animate-fade-in"
+          onClick={() => setIsCardGalleryOpen(false)}
+        >
+          <div
+            className="relative w-full h-full max-w-[1600px] max-h-[95vh] flex items-center justify-center animate-zoom-in"
+            onClick={(event) => event.stopPropagation()}
+          >
+            <img
+              src={cardGalleryImg}
+              alt="Galeria de cartas do personagem"
+              className="max-w-full max-h-full object-contain drop-shadow-[0_0_35px_rgba(233,193,118,0.3)]"
+            />
+
+            <button
+              onClick={() => setIsCardGalleryOpen(false)}
+              className="absolute top-3 right-3 md:top-5 md:right-5 bg-background/90 border border-primary text-primary hover:text-foreground w-10 h-10 rounded-full flex items-center justify-center transition-colors cursor-pointer shadow-lg z-10 hover:shadow-primary/20"
+              title="Fechar"
+            >
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" className="w-5 h-5">
                 <path d="M18 6L6 18M6 6l12 12" />
               </svg>
             </button>

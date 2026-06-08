@@ -107,7 +107,8 @@ const vercelApiEmulator = (editPassword: string) => ({
   }
 });
 
-const localEnv = loadEnv(process.env.NODE_ENV || "development", __dirname, "");
+loadEnv(process.env.NODE_ENV || "development", __dirname, "");
+const localEditPassword = "grimorio";
 
 export default defineConfig({
   base: basePath,
@@ -115,7 +116,7 @@ export default defineConfig({
     react(),
     tailwindcss(),
     runtimeErrorOverlay(),
-    vercelApiEmulator(localEnv.EDIT_PASSWORD),
+    vercelApiEmulator(localEditPassword),
     ...(process.env.NODE_ENV !== "production" &&
       process.env.REPL_ID !== undefined
       ? [
