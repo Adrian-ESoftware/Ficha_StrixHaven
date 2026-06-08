@@ -4,9 +4,9 @@ import { LeftColumn } from '@/components/grimoire/left-column';
 import { RightColumn } from '@/components/grimoire/right-column';
 import { LoreSection } from '@/components/grimoire/lore-section';
 import { LevelUpSection } from '@/components/grimoire/level-up-section';
+import { CardGallery } from '@/components/grimoire/card-gallery';
 import { Divider } from '@/components/grimoire/shared';
 import conceptImg from '@/components/imgs/concept.png';
-import cardGalleryImg from '@/components/imgs/pagina_de_cartas.png';
 import { CharacterProvider, useCharacter } from '@/lib/character-context';
 
 export default function Home() {
@@ -202,28 +202,14 @@ function GrimoireSheet() {
       {/* Overlay Modal for Card Gallery */}
       {isCardGalleryOpen && (
         <div
-          className="fixed inset-0 bg-background/95 backdrop-blur-md z-50 flex items-center justify-center p-2 md:p-6 animate-fade-in"
+          className="fixed inset-0 bg-background/75 backdrop-blur-sm z-50 flex items-center justify-center p-2 md:p-6 animate-fade-in"
           onClick={() => setIsCardGalleryOpen(false)}
         >
           <div
             className="relative w-full h-full max-w-[1600px] max-h-[95vh] flex items-center justify-center animate-zoom-in"
             onClick={(event) => event.stopPropagation()}
           >
-            <img
-              src={cardGalleryImg}
-              alt="Galeria de cartas do personagem"
-              className="max-w-full max-h-full object-contain drop-shadow-[0_0_35px_rgba(233,193,118,0.3)]"
-            />
-
-            <button
-              onClick={() => setIsCardGalleryOpen(false)}
-              className="absolute top-3 right-3 md:top-5 md:right-5 bg-background/90 border border-primary text-primary hover:text-foreground w-10 h-10 rounded-full flex items-center justify-center transition-colors cursor-pointer shadow-lg z-10 hover:shadow-primary/20"
-              title="Fechar"
-            >
-              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" className="w-5 h-5">
-                <path d="M18 6L6 18M6 6l12 12" />
-              </svg>
-            </button>
+            <CardGallery onClose={() => setIsCardGalleryOpen(false)} />
           </div>
         </div>
       )}

@@ -56,6 +56,9 @@ export interface CharacterData {
   // Lore (markdown)
   lore: string;
 
+  // Card gallery images by slot
+  cardGallery: Record<string, string>;
+
   // Level Up checkboxes
   levelUpChecks: Record<string, boolean[]>;
 }
@@ -134,6 +137,8 @@ export const DEFAULT_CHARACTER: CharacterData = {
   invWeapon2: { name: "", trait: "", damage: "", feature: "", isPrimary: false, isSecondary: false },
 
   lore: PLACEHOLDER_LORE,
+
+  cardGallery: {},
 
   levelUpChecks: {},
 };
