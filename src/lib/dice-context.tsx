@@ -47,6 +47,10 @@ export function DiceProvider({ children }: { children: React.ReactNode }) {
     const [themeColor, setThemeColor] = useState<string>(DEFAULT_THEME_COLOR);
     const [isReady, setIsReady] = useState(false);
     const clearTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+    const dualClearTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+    const diceBoxBlueRef = useRef<any>(null);
+    const diceBoxRedRef = useRef<any>(null);
+    const dualInitPromiseRef = useRef<Promise<void> | null>(null);
 
     useEffect(() => {
         let mounted = true;
@@ -90,8 +94,51 @@ export function DiceProvider({ children }: { children: React.ReactNode }) {
             if (clearTimerRef.current) {
                 clearTimeout(clearTimerRef.current);
             }
+            if (dualClearTimerRef.current) {
+                clearTimeout(dualClearTimerRef.current);
+            }
         };
     }, []);
+
+    const ensureDualReady = async () => {
+        if (diceBoxBlueRef.current && diceBoxRedRef.current) return;
+
+        if (dualInitPromiseRef.current) {
+            await dualInitPromiseRef.current;
+            return;
+        }
+
+        dualInitPromiseRef.current = (async () => {
+            try {
+                const DiceBoxModule = await import("@3d-dice/dice-box");
+                const DiceBox = DiceBoxModule.default || DiceBoxModule;
+
+                const blueBox = new DiceBox("#dice-box-dual-blue", {
+                    assetPath: "/assets/dice-box/",
+                    theme: "default",
+                    themeColor: "#3b82f6",
+                    scale: 5,
+                });
+                await blueBox.init();
+
+                const redBox = new DiceBox("#dice-box-dual-red", {
+                    assetPath: "/assets/dice-box/",
+                    theme: "default",
+                    themeColor: "#ef4444",
+                    scale: 5,
+                });
+                await redBox.init();
+
+                diceBoxBlueRef.current = blueBox;
+                diceBoxRedRef.current = redBox;
+            } catch (error) {
+                console.error("Failed to initialize dual DiceBox instances:", error);
+                throw error;
+            }
+        })();
+
+        await dualInitPromiseRef.current;
+    };
 
     const rollDice = async (notation: string): Promise<DiceResult | null> => {
         if (!diceBox || !parser) {
@@ -102,6 +149,13 @@ export function DiceProvider({ children }: { children: React.ReactNode }) {
         if (clearTimerRef.current) {
             clearTimeout(clearTimerRef.current);
             clearTimerRef.current = null;
+        }
+
+        if (dualClearTimerRef.current) {
+            clearTimeout(dualClearTimerRef.current);
+            dualClearTimerRef.current = null;
+            diceBoxBlueRef.current?.clear();
+            diceBoxRedRef.current?.clear();
         }
 
         try {
@@ -155,7 +209,7 @@ export function DiceProvider({ children }: { children: React.ReactNode }) {
     };
 
     const rollDualidade = async (): Promise<DualidadeResult | null> => {
-        if (!diceBox || !parser) {
+        if (!parser) {
             console.warn("Dice system not initialized");
             return null;
         }
@@ -163,30 +217,70 @@ export function DiceProvider({ children }: { children: React.ReactNode }) {
         if (clearTimerRef.current) {
             clearTimeout(clearTimerRef.current);
             clearTimerRef.current = null;
+            diceBox?.clear();
+        }
+
+        if (dualClearTimerRef.current) {
+            clearTimeout(dualClearTimerRef.current);
+            dualClearTimerRef.current = null;
         }
 
         try {
-            const dieGroup = parser.parseNotation("2d12");
+            await ensureDualReady();
 
-            const allResults = await diceBox.roll(dieGroup, { themeColor: "#8b5cf6" });
+            const dieGroup = parser.parseNotation("1d12");
 
-            const finalResults = parser.parseFinalResults(allResults);
+            const rollAsync = (box: any, notation: unknown[]): Promise<unknown[]> => {
+                return new Promise((resolve) => {
+                    const prev = box.onRollComplete;
+                    box.onRollComplete = (results: unknown[]) => {
+                        box.onRollComplete = prev;
+                        resolve(results || []);
+                    };
+                    box.roll(notation);
+                });
+            };
 
-            let blueValue = 0;
-            let redValue = 0;
+            const bluePromise = rollAsync(diceBoxBlueRef.current, [...dieGroup]);
+            const redPromise = rollAsync(diceBoxRedRef.current, [...dieGroup]);
 
-            if (finalResults?.rolls && Array.isArray(finalResults.rolls)) {
-                const validRolls = finalResults.rolls.filter(
-                    (r: any) => r.valid !== false && typeof r.value === 'number'
-                );
-                blueValue = validRolls[0]?.value ?? 0;
-                redValue = validRolls[1]?.value ?? 0;
-            }
+            const [blueResults, redResults] = await Promise.all([bluePromise, redPromise]);
 
-            clearTimerRef.current = setTimeout(() => {
-                if (diceBox && typeof diceBox.clear === 'function') {
-                    diceBox.clear();
+            const extractValue = (results: unknown): number => {
+                if (!results) return 0;
+                if (Array.isArray(results)) {
+                    for (const item of results) {
+                        const val = extractValue(item);
+                        if (val > 0) return val;
+                    }
+                    return 0;
                 }
+                if (typeof results === 'object') {
+                    const obj = results as Record<string, unknown>;
+                    if (obj.value !== undefined
+                        && typeof obj.value === 'number'
+                        && !isNaN(obj.value)
+                        && obj.sides !== undefined) {
+                        return obj.value as number;
+                    }
+                    for (const key of Object.keys(obj)) {
+                        const val = extractValue(obj[key]);
+                        if (val > 0) return val;
+                    }
+                }
+                return 0;
+            };
+
+            const blueValue = extractValue(blueResults);
+            const redValue = extractValue(redResults);
+
+            console.log("Dualidade raw blue:", JSON.stringify(blueResults));
+            console.log("Dualidade raw red:", JSON.stringify(redResults));
+            console.log("Dualidade extracted:", { blue: blueValue, red: redValue });
+
+            dualClearTimerRef.current = setTimeout(() => {
+                diceBoxBlueRef.current?.clear();
+                diceBoxRedRef.current?.clear();
             }, 8000);
 
             return { blue: blueValue, red: redValue };
@@ -201,6 +295,14 @@ export function DiceProvider({ children }: { children: React.ReactNode }) {
             <div
                 id="dice-box-container"
                 className="fixed inset-0 pointer-events-none z-[9999] w-screen h-screen overflow-hidden"
+            />
+            <div
+                id="dice-box-dual-blue"
+                className="fixed top-0 left-0 w-1/2 h-screen pointer-events-none z-[9998] overflow-hidden"
+            />
+            <div
+                id="dice-box-dual-red"
+                className="fixed top-0 right-0 w-1/2 h-screen pointer-events-none z-[9998] overflow-hidden"
             />
             {children}
         </DiceContext.Provider>

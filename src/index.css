@@ -305,6 +305,14 @@
   width: 100vw !important;
   height: 100vh !important;
 }
+#dice-box-dual-blue {
+  width: 50vw !important;
+  height: 100vh !important;
+}
+#dice-box-dual-red {
+  width: 50vw !important;
+  height: 100vh !important;
+}
 .dice-box-canvas {
   width: 100% !important;
   height: 100% !important;
