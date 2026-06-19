@@ -1,9 +1,12 @@
+import { useRef, useState } from 'react';
 import { useCharacter } from '@/lib/character-context';
 import { InputLine, StatShield } from './shared';
 import perfilImg from '@/components/imgs/perfil.png';
 
 export function HeaderStats() {
-  const { data, update, updateNested } = useCharacter();
+  const { data, update, updateNested, canEdit, uploadImage } = useCharacter();
+  const avatarInputRef = useRef<HTMLInputElement>(null);
+  const [isAvatarUploading, setIsAvatarUploading] = useState(false);
   type StatKey = keyof typeof data.stats;
 
   const toggleArmorPoint = (index: number) => {
@@ -18,6 +21,13 @@ export function HeaderStats() {
     update("statChecks", { ...data.statChecks, [stat]: checks });
   };
 
+  const handleAvatarUpload = async (file?: File) => {
+    if (!file || !file.type.startsWith('image/')) return;
+    setIsAvatarUploading(true);
+    await uploadImage(file, 'avatar');
+    setIsAvatarUploading(false);
+  };
+
   return (
     <div className="w-full mb-10 flex flex-col gap-8">
       {/* HEADER ROW */}
@@ -25,13 +35,44 @@ export function HeaderStats() {
         
         {/* LARGE PORTRAIT */}
         <div className="relative w-36 h-36 shrink-0 border-2 border-primary/30 rounded-xl overflow-hidden group shadow-[0_0_20px_rgba(233,193,118,0.2)] hover:border-primary/80 transition-all duration-500 bg-card">
-          <img 
-            src={perfilImg} 
-            alt="Avatar de Elara" 
-            className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-700" 
+          <input
+            ref={avatarInputRef}
+            type="file"
+            accept="image/*"
+            className="hidden"
+            onChange={(event) => {
+              handleAvatarUpload(event.target.files?.[0]);
+              event.target.value = '';
+            }}
           />
-          {/* Subtle gradient overlay */}
-          <div className="absolute inset-0 bg-gradient-to-t from-background/50 via-transparent to-transparent opacity-85" />
+          <button
+            type="button"
+            disabled={!canEdit || isAvatarUploading}
+            onClick={() => canEdit ? avatarInputRef.current?.click() : null}
+            className="w-full h-full cursor-default disabled:cursor-default"
+            title={canEdit ? 'Clique para alterar o avatar' : 'Desbloqueie a edição para alterar o avatar'}
+          >
+            <img
+              src={data.avatar || perfilImg}
+              alt="Avatar"
+              className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-700"
+            />
+            {/* Subtle gradient overlay */}
+            <div className="absolute inset-0 bg-gradient-to-t from-background/50 via-transparent to-transparent opacity-85" />
+            {/* Upload overlay on hover when editable */}
+            {canEdit && (
+              <div className="absolute inset-0 bg-background/60 opacity-0 group-hover:opacity-100 transition-opacity duration-300 flex items-center justify-center">
+                {isAvatarUploading ? (
+                  <div className="w-6 h-6 border-2 border-primary border-t-transparent rounded-full animate-spin" />
+                ) : (
+                  <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" className="w-8 h-8 text-primary drop-shadow-[0_0_8px_rgba(233,193,118,0.6)]">
+                    <path strokeLinecap="round" strokeLinejoin="round" d="M3 9a2 2 0 012-2h.93a2 2 0 001.664-.89l.812-1.22A2 2 0 0110.07 4h3.86a2 2 0 011.664.89l.812 1.22A2 2 0 0018.07 7H19a2 2 0 012 2v9a2 2 0 01-2 2H5a2 2 0 01-2-2V9z" />
+                    <path strokeLinecap="round" strokeLinejoin="round" d="M15 13a3 3 0 11-6 0 3 3 0 016 0z" />
+                  </svg>
+                )}
+              </div>
+            )}
+          </button>
           {/* Inner decorative frame line */}
           <div className="absolute inset-1.5 border border-primary/20 pointer-events-none group-hover:border-primary/40 transition-colors duration-500 rounded-lg" />
         </div>

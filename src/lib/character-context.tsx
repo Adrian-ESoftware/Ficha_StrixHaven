@@ -1,5 +1,14 @@
 import { createContext, useContext, useState, useCallback, useRef, useEffect, type ReactNode } from 'react';
 
+// ─── Card Data ─────────────────────────────────────────────────────────────────
+
+export interface CardData {
+  icon: string;
+  name: string;
+  description: string;
+  domain?: string;
+}
+
 // ─── Character Data Shape ─────────────────────────────────────────────────────
 
 export interface CharacterData {
@@ -56,8 +65,12 @@ export interface CharacterData {
   // Lore (markdown)
   lore: string;
 
-  // Card gallery images by slot
-  cardGallery: Record<string, string>;
+  // Cards (icon + name + description)
+  cards: Record<string, CardData>;
+
+  // Custom images (Vercel Blob URLs)
+  avatar?: string;
+  conceptArt?: string;
 
   // Level Up checkboxes
   levelUpChecks: Record<string, boolean[]>;
@@ -138,7 +151,7 @@ export const DEFAULT_CHARACTER: CharacterData = {
 
   lore: PLACEHOLDER_LORE,
 
-  cardGallery: {},
+  cards: {},
 
   levelUpChecks: {},
 };
@@ -156,8 +169,11 @@ interface CharacterContextType {
   saveStatus: SaveStatus;
   characterId: string;
   canEdit: boolean;
+  exists: boolean;
   unlock: (password: string) => Promise<boolean>;
   lock: () => void;
+  createCharacter: (password: string) => Promise<'ok' | 'exists' | 'error'>;
+  uploadImage: (file: File, type: 'avatar' | 'concept-art') => Promise<string | null>;
 }
 
 const CharacterContext = createContext<CharacterContextType | null>(null);
@@ -193,12 +209,12 @@ async function apiSave(id: string, data: CharacterData, password: string): Promi
   }
 }
 
-async function apiUnlock(password: string): Promise<boolean> {
+async function apiUnlock(id: string, password: string): Promise<boolean> {
   try {
     const res = await fetch('/api/auth', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ password }),
+      body: JSON.stringify({ id, password }),
     });
     if (!res.ok) {
       console.error('Failed to unlock editing:', await readApiError(res));
@@ -207,6 +223,62 @@ async function apiUnlock(password: string): Promise<boolean> {
   } catch (error) {
     console.error('Failed to unlock editing:', error);
     return false;
+  }
+}
+
+async function apiCreate(id: string, data: CharacterData, password: string): Promise<'ok' | 'exists' | 'error'> {
+  try {
+    const res = await fetch('/api/create', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ id, data, password }),
+    });
+    if (res.status === 409) return 'exists';
+    if (!res.ok) {
+      console.error('Failed to create character:', await readApiError(res));
+      return 'error';
+    }
+    return 'ok';
+  } catch (error) {
+    console.error('Failed to create character:', error);
+    return 'error';
+  }
+}
+
+async function apiUploadImage(id: string, file: File, password: string, type: 'avatar' | 'concept-art'): Promise<string | null> {
+  try {
+    const base64 = await new Promise<string>((resolve, reject) => {
+      const reader = new FileReader();
+      reader.onload = () => {
+        if (typeof reader.result === 'string') {
+          resolve(reader.result);
+        } else {
+          reject(new Error('Failed to read file'));
+        }
+      };
+      reader.onerror = () => reject(reader.error);
+      reader.readAsDataURL(file);
+    });
+
+    const res = await fetch('/api/upload-image', {
+      method: 'PUT',
+      headers: {
+        'Content-Type': 'application/json',
+        'X-Edit-Password': password,
+      },
+      body: JSON.stringify({ id, image: base64, type }),
+    });
+
+    if (!res.ok) {
+      console.error('Failed to upload image:', await readApiError(res));
+      return null;
+    }
+
+    const result = await res.json() as { url: string };
+    return result.url;
+  } catch (error) {
+    console.error('Failed to upload image:', error);
+    return null;
   }
 }
 
@@ -246,27 +318,26 @@ export function CharacterProvider({ characterId, children }: CharacterProviderPr
   const [data, setData] = useState<CharacterData>(DEFAULT_CHARACTER);
   const [saveStatus, setSaveStatus] = useState<SaveStatus>('idle');
   const [loaded, setLoaded] = useState(false);
+  const [exists, setExists] = useState(false);
   const [canEdit, setCanEdit] = useState(false);
   const debounceRef = useRef<ReturnType<typeof setTimeout> | null>(null);
   const passwordRef = useRef('');
   const dataRef = useRef(data);
   dataRef.current = data;
 
-  // Load on mount
   useEffect(() => {
     let cancelled = false;
     apiLoad(characterId).then((loaded_data) => {
       if (cancelled) return;
       if (loaded_data) {
-        // Merge with defaults so new fields are filled in
         setData({ ...DEFAULT_CHARACTER, ...loaded_data });
+        setExists(true);
       }
       setLoaded(true);
     });
     return () => { cancelled = true; };
   }, [characterId]);
 
-  // Auto-save with debounce (2s after last change)
   const triggerSave = useCallback(() => {
     if (debounceRef.current) clearTimeout(debounceRef.current);
     debounceRef.current = setTimeout(async () => {
@@ -277,7 +348,6 @@ export function CharacterProvider({ characterId, children }: CharacterProviderPr
         setCanEdit(false);
       }
       setSaveStatus(result === 'saved' ? 'saved' : 'error');
-      // Reset to idle after 3s
       setTimeout(() => setSaveStatus('idle'), 3000);
     }, 2000);
   }, [characterId]);
@@ -300,13 +370,13 @@ export function CharacterProvider({ characterId, children }: CharacterProviderPr
   }, [canEdit, triggerSave]);
 
   const unlock = useCallback(async (password: string) => {
-    const ok = await apiUnlock(password);
+    const ok = await apiUnlock(characterId, password);
     if (ok) {
       passwordRef.current = password;
       setCanEdit(true);
     }
     return ok;
-  }, []);
+  }, [characterId]);
 
   const lock = useCallback(() => {
     if (debounceRef.current) clearTimeout(debounceRef.current);
@@ -314,6 +384,25 @@ export function CharacterProvider({ characterId, children }: CharacterProviderPr
     setCanEdit(false);
     setSaveStatus('idle');
   }, []);
+
+  const createCharacter = useCallback(async (password: string) => {
+    const result = await apiCreate(characterId, DEFAULT_CHARACTER, password);
+    if (result === 'ok') {
+      passwordRef.current = password;
+      setCanEdit(true);
+      setExists(true);
+    }
+    return result;
+  }, [characterId]);
+
+  const uploadImage = useCallback(async (file: File, type: 'avatar' | 'concept-art') => {
+    const url = await apiUploadImage(characterId, file, passwordRef.current, type);
+    if (url) {
+      if (type === 'avatar') update('avatar', url);
+      else update('conceptArt', url);
+    }
+    return url;
+  }, [characterId, update]);
 
   if (!loaded) {
     return (
@@ -327,7 +416,7 @@ export function CharacterProvider({ characterId, children }: CharacterProviderPr
   }
 
   return (
-    <CharacterContext.Provider value={{ data, update, updateNested, saveStatus, characterId, canEdit, unlock, lock }}>
+    <CharacterContext.Provider value={{ data, update, updateNested, saveStatus, characterId, canEdit, exists, unlock, lock, createCharacter, uploadImage }}>
       {children}
     </CharacterContext.Provider>
   );
