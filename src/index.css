@@ -299,3 +299,13 @@
 .animate-zoom-in {
   animation: zoomIn 0.25s cubic-bezier(0.16, 1, 0.3, 1) forwards;
 }
+
+/* Dice Box canvas - force full viewport rendering area */
+#dice-box-container {
+  width: 100vw !important;
+  height: 100vh !important;
+}
+.dice-box-canvas {
+  width: 100% !important;
+  height: 100% !important;
+}

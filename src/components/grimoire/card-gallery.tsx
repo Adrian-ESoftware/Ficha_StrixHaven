@@ -1,4 +1,12 @@
 import { useState } from 'react';
+import {
+  DndContext,
+  DragOverlay,
+  useDraggable,
+  useDroppable,
+  type DragStartEvent,
+  type DragEndEvent,
+} from '@dnd-kit/core';
 import { useCharacter, type CardData } from '@/lib/character-context';
 import { IconPicker, renderLucideIcon } from './icon-picker';
 
@@ -31,7 +39,7 @@ function EmptyCardMark() {
   );
 }
 
-// ─── Card Slot View ────────────────────────────────────────────────────────────
+// ─── Card Slot View (DnD) ───────────────────────────────────────────────────────
 
 function CardSlotView({
   slot,
@@ -45,6 +53,16 @@ function CardSlotView({
   const { data, canEdit, update } = useCharacter();
   const card = data.cards?.[slot.id];
 
+  const { setNodeRef: setDroppableRef, isOver } = useDroppable({
+    id: slot.id,
+    disabled: !canEdit,
+  });
+
+  const { setNodeRef: setDraggableRef, attributes, listeners, isDragging, transform } = useDraggable({
+    id: slot.id,
+    disabled: !card || !canEdit,
+  });
+
   const handleClick = () => {
     if (card) {
       onOpenDetail(card, slot.id);
@@ -53,17 +71,36 @@ function CardSlotView({
     }
   };
 
+  const dragStyle = card && canEdit
+    ? {
+        transform: transform ? `translate3d(${transform.x}px, ${transform.y}px, 0)` : undefined,
+        opacity: isDragging ? 0.3 : undefined,
+      }
+    : undefined;
+
   return (
     <div className="flex min-w-0 flex-col items-center gap-2">
       {slot.label && (
         <span className="font-serif text-sm font-bold tracking-wide text-primary/90 md:text-base">{slot.label}</span>
       )}
-      <div className="group relative aspect-[5/7] w-full max-w-[150px]">
+      <div
+        ref={setDroppableRef}
+        className={`group relative aspect-[5/7] w-full max-w-[150px] transition-all duration-200 ${
+          isOver && canEdit
+            ? 'scale-105 ring-2 ring-primary ring-offset-2 ring-offset-card shadow-[0_0_18px_rgba(233,193,118,0.4)]'
+            : ''
+        }`}
+      >
         <button
+          ref={(node) => { if (card && canEdit) setDraggableRef(node); }}
+          {...(card && canEdit ? { ...attributes, ...listeners } : {})}
+          style={dragStyle}
           type="button"
           disabled={!card && !canEdit}
           onClick={handleClick}
-          className="h-full w-full overflow-hidden border border-primary/35 bg-background/45 shadow-[inset_0_0_25px_rgba(0,0,0,0.45),0_8px_18px_rgba(0,0,0,0.25)] transition-all enabled:hover:-translate-y-1 enabled:hover:border-primary/80 enabled:hover:shadow-[0_0_22px_rgba(233,193,118,0.22)] disabled:cursor-default"
+          className={`h-full w-full overflow-hidden border border-primary/35 bg-background/45 shadow-[inset_0_0_25px_rgba(0,0,0,0.45),0_8px_18px_rgba(0,0,0,0.25)] transition-all enabled:hover:-translate-y-1 enabled:hover:border-primary/80 enabled:hover:shadow-[0_0_22px_rgba(233,193,118,0.22)] disabled:cursor-default ${
+            card && canEdit ? 'cursor-grab touch-none' : ''
+          }`}
           title={card ? card.name : canEdit ? 'Adicionar carta' : 'Espaço vazio'}
         >
           {card ? (
@@ -81,7 +118,7 @@ function CardSlotView({
           )}
         </button>
 
-        {card && canEdit && (
+        {card && canEdit && !isDragging && (
           <div className="absolute -right-2 -top-2 flex gap-1 opacity-0 transition-opacity group-hover:opacity-100">
             <button
               type="button"
@@ -361,12 +398,26 @@ function CardSection({
   );
 }
 
+// ─── Drag Overlay Card ──────────────────────────────────────────────────────────
+
+function DragOverlayCard({ card }: { card: CardData }) {
+  return (
+    <div className="aspect-[5/7] w-[150px] border-2 border-primary bg-card/95 shadow-[0_0_30px_rgba(233,193,118,0.35)] flex flex-col items-center justify-center gap-2 p-2 backdrop-blur-sm">
+      {renderLucideIcon(card.icon, 'w-8 h-8 text-primary')}
+      <span className="font-serif text-xs font-bold text-primary/90 text-center leading-tight line-clamp-2">
+        {card.name}
+      </span>
+    </div>
+  );
+}
+
 // ─── Main Card Gallery Export ──────────────────────────────────────────────────
 
 export function CardGallery({ onClose }: { onClose: () => void }) {
   const { data, canEdit, update } = useCharacter();
   const [detailCard, setDetailCard] = useState<{ card: CardData; slotId: string } | null>(null);
   const [editingSlotId, setEditingSlotId] = useState<string | null>(null);
+  const [activeDrag, setActiveDrag] = useState<{ slotId: string; card: CardData } | null>(null);
 
   const handleOpenDetail = (card: CardData, slotId: string) => {
     setDetailCard({ card, slotId });
@@ -384,57 +435,99 @@ export function CardGallery({ onClose }: { onClose: () => void }) {
     setDetailCard(null);
   };
 
+  const handleDragStart = (event: DragStartEvent) => {
+    const activeId = String(event.active.id);
+    const card = data.cards[activeId];
+    if (card) {
+      setActiveDrag({ slotId: activeId, card });
+    }
+  };
+
+  const handleDragEnd = (event: DragEndEvent) => {
+    setActiveDrag(null);
+
+    const { active, over } = event;
+    if (!canEdit || !over || active.id === over.id) return;
+
+    const sourceId = String(active.id);
+    const targetId = String(over.id);
+
+    const sourceCard = data.cards[sourceId];
+    if (!sourceCard) return;
+
+    const targetCard = data.cards[targetId];
+
+    const nextCards = { ...data.cards };
+
+    if (targetCard) {
+      nextCards[sourceId] = targetCard;
+    } else {
+      delete nextCards[sourceId];
+    }
+    nextCards[targetId] = sourceCard;
+
+    update('cards', nextCards);
+  };
+
   return (
-    <div className="relative max-h-[95vh] w-full max-w-[1450px] overflow-y-auto border border-primary/40 bg-card/80 p-6 text-foreground shadow-[0_0_60px_rgba(233,193,118,0.22)] backdrop-blur-xl md:p-10">
-      <div className="pointer-events-none absolute inset-0 bg-[radial-gradient(circle_at_top,rgba(233,193,118,0.12),transparent_45%)]" />
-      <div className="relative">
-        <div className="mb-8 flex flex-wrap items-center justify-between gap-4">
-          <div>
-            <p className="font-mono text-[10px] uppercase tracking-[0.25em] text-muted-foreground">Personagem: {data.name}</p>
-            <h2 className="mt-1 font-serif text-3xl font-bold tracking-wider text-primary">Galeria de Cartas</h2>
+    <DndContext onDragStart={handleDragStart} onDragEnd={handleDragEnd}>
+      <div className="relative max-h-[95vh] w-full max-w-[1450px] overflow-y-auto border border-primary/40 bg-card/80 p-6 text-foreground shadow-[0_0_60px_rgba(233,193,118,0.22)] backdrop-blur-xl md:p-10">
+        <div className="pointer-events-none absolute inset-0 bg-[radial-gradient(circle_at_top,rgba(233,193,118,0.12),transparent_45%)]" />
+        <div className="relative">
+          <div className="mb-8 flex flex-wrap items-center justify-between gap-4">
+            <div>
+              <p className="font-mono text-[10px] uppercase tracking-[0.25em] text-muted-foreground">Personagem: {data.name}</p>
+              <h2 className="mt-1 font-serif text-3xl font-bold tracking-wider text-primary">Galeria de Cartas</h2>
+            </div>
+            <p className="max-w-sm font-mono text-[10px] uppercase tracking-widest text-muted-foreground">
+              {canEdit
+                ? 'Arraste cartas entre espaços para reorganizar.'
+                : 'Desbloqueie a edição para adicionar ou remover cartas.'}
+            </p>
           </div>
-          <p className="max-w-sm font-mono text-[10px] uppercase tracking-widest text-muted-foreground">
-            {canEdit ? 'Clique em um espaço para adicionar uma carta.' : 'Desbloqueie a edição para adicionar ou remover cartas.'}
-          </p>
+
+          <div className="grid gap-8 lg:grid-cols-[1fr_1.5fr]">
+            <CardSection title="Ancestralidade" slots={ancestrySlots} onOpenDetail={handleOpenDetail} onEditSlot={handleEdit} />
+            <CardSection title="Subclasse" slots={subclassSlots} onOpenDetail={handleOpenDetail} onEditSlot={handleEdit} />
+          </div>
+
+          <CardSection title="Loadout" slots={loadoutSlots} onOpenDetail={handleOpenDetail} onEditSlot={handleEdit} className="mt-10" />
+          <CardSection title="Cofre" slots={vaultSlots} onOpenDetail={handleOpenDetail} onEditSlot={handleEdit} className="mt-10" />
         </div>
 
-        <div className="grid gap-8 lg:grid-cols-[1fr_1.5fr]">
-          <CardSection title="Ancestralidade" slots={ancestrySlots} onOpenDetail={handleOpenDetail} onEditSlot={handleEdit} />
-          <CardSection title="Subclasse" slots={subclassSlots} onOpenDetail={handleOpenDetail} onEditSlot={handleEdit} />
-        </div>
+        <button
+          type="button"
+          onClick={onClose}
+          className="absolute right-5 top-5 z-20 flex h-10 w-10 items-center justify-center rounded-full border border-primary bg-background/95 text-primary shadow-lg transition-colors hover:text-foreground"
+          title="Fechar"
+        >
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" className="w-5 h-5">
+            <path d="M18 6L6 18M6 6l12 12" />
+          </svg>
+        </button>
 
-        <CardSection title="Loadout" slots={loadoutSlots} onOpenDetail={handleOpenDetail} onEditSlot={handleEdit} className="mt-10" />
-        <CardSection title="Cofre" slots={vaultSlots} onOpenDetail={handleOpenDetail} onEditSlot={handleEdit} className="mt-10" />
+        {detailCard && (
+          <CardDetail
+            card={detailCard.card}
+            slotId={detailCard.slotId}
+            canEdit={canEdit}
+            onEdit={handleEdit}
+            onDelete={handleDelete}
+            onClose={() => setDetailCard(null)}
+          />
+        )}
+
+        {editingSlotId && (
+          <CardEditor
+            slotId={editingSlotId}
+            onClose={() => setEditingSlotId(null)}
+          />
+        )}
       </div>
 
-      <button
-        type="button"
-        onClick={onClose}
-        className="absolute right-5 top-5 z-20 flex h-10 w-10 items-center justify-center rounded-full border border-primary bg-background/95 text-primary shadow-lg transition-colors hover:text-foreground"
-        title="Fechar"
-      >
-        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" className="w-5 h-5">
-          <path d="M18 6L6 18M6 6l12 12" />
-        </svg>
-      </button>
-
-      {detailCard && (
-        <CardDetail
-          card={detailCard.card}
-          slotId={detailCard.slotId}
-          canEdit={canEdit}
-          onEdit={handleEdit}
-          onDelete={handleDelete}
-          onClose={() => setDetailCard(null)}
-        />
-      )}
-
-      {editingSlotId && (
-        <CardEditor
-          slotId={editingSlotId}
-          onClose={() => setEditingSlotId(null)}
-        />
-      )}
-    </div>
+      <DragOverlay dropAnimation={null}>
+        {activeDrag ? <DragOverlayCard card={activeDrag.card} /> : null}
+      </DragOverlay>
+    </DndContext>
   );
 }

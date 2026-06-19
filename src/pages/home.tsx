@@ -6,6 +6,7 @@ import { LoreSection } from '@/components/grimoire/lore-section';
 import { LevelUpSection } from '@/components/grimoire/level-up-section';
 import { HakiSection } from '@/components/grimoire/haki-section';
 import { CardGallery } from '@/components/grimoire/card-gallery';
+import { DiceRollerFAB } from '@/components/grimoire/dice-roller';
 import { Divider } from '@/components/grimoire/shared';
 import conceptImg from '@/components/imgs/concept.png';
 import { CharacterProvider, useCharacter } from '@/lib/character-context';
@@ -326,6 +327,9 @@ function GrimoireSheet() {
           <path strokeLinecap="round" strokeLinejoin="round" d="M15 5l-7 7 7 7" />
         </svg>
       </button>
+
+      {/* Dice Rolling FAB */}
+      <DiceRollerFAB />
 
       {/* Overlay Modal for Concept Art */}
       {isOverlayOpen && (

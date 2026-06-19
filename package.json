@@ -7,7 +7,8 @@
     "dev": "vite --config vite.config.ts --host 0.0.0.0",
     "build": "vite build --config vite.config.ts",
     "serve": "vite preview --config vite.config.ts --host 0.0.0.0",
-    "typecheck": "tsc -p tsconfig.json --noEmit"
+    "typecheck": "tsc -p tsconfig.json --noEmit",
+    "postinstall": "node -e \"const fs=require('fs');const src='node_modules/@3d-dice/dice-box/dist/assets';const dest='public/assets/dice-box';if(fs.existsSync(src)){fs.rmSync(dest,{recursive:true,force:true});fs.cpSync(src,dest,{recursive:true})}\""
   },
   "devDependencies": {
     "@hookform/resolvers": "^3.10.0",
@@ -76,6 +77,9 @@
     "zod": "^3.25.76"
   },
   "dependencies": {
+    "@3d-dice/dice-box": "^1.1.4",
+    "@3d-dice/dice-parser-interface": "^0.2.1",
+    "@dnd-kit/core": "^6.3.1",
     "@vercel/blob": "^2.4.0",
     "react-markdown": "^10.1.0"
   }
