@@ -9,6 +9,16 @@ export interface CardData {
   domain?: string;
 }
 
+// ─── Haki Data ─────────────────────────────────────────────────────────────────
+
+export interface HakiData {
+  willPoints: number;
+  mainPath?: 'observation' | 'armament' | 'akuma-no-mi';
+  observation: boolean[];
+  armament: boolean[];
+  conquerors: boolean[];
+}
+
 // ─── Character Data Shape ─────────────────────────────────────────────────────
 
 export interface CharacterData {
@@ -67,6 +77,9 @@ export interface CharacterData {
 
   // Cards (icon + name + description)
   cards: Record<string, CardData>;
+
+  // Haki system
+  haki: HakiData;
 
   // Custom images (Vercel Blob URLs)
   avatar?: string;
@@ -152,6 +165,13 @@ export const DEFAULT_CHARACTER: CharacterData = {
   lore: PLACEHOLDER_LORE,
 
   cards: {},
+
+  haki: {
+    willPoints: 0,
+    observation: [false, false, false],
+    armament: [false, false, false],
+    conquerors: [false, false, false],
+  },
 
   levelUpChecks: {},
 };
@@ -242,43 +262,6 @@ async function apiCreate(id: string, data: CharacterData, password: string): Pro
   } catch (error) {
     console.error('Failed to create character:', error);
     return 'error';
-  }
-}
-
-async function apiUploadImage(id: string, file: File, password: string, type: 'avatar' | 'concept-art'): Promise<string | null> {
-  try {
-    const base64 = await new Promise<string>((resolve, reject) => {
-      const reader = new FileReader();
-      reader.onload = () => {
-        if (typeof reader.result === 'string') {
-          resolve(reader.result);
-        } else {
-          reject(new Error('Failed to read file'));
-        }
-      };
-      reader.onerror = () => reject(reader.error);
-      reader.readAsDataURL(file);
-    });
-
-    const res = await fetch('/api/upload-image', {
-      method: 'PUT',
-      headers: {
-        'Content-Type': 'application/json',
-        'X-Edit-Password': password,
-      },
-      body: JSON.stringify({ id, image: base64, type }),
-    });
-
-    if (!res.ok) {
-      console.error('Failed to upload image:', await readApiError(res));
-      return null;
-    }
-
-    const result = await res.json() as { url: string };
-    return result.url;
-  } catch (error) {
-    console.error('Failed to upload image:', error);
-    return null;
   }
 }
 
@@ -396,13 +379,25 @@ export function CharacterProvider({ characterId, children }: CharacterProviderPr
   }, [characterId]);
 
   const uploadImage = useCallback(async (file: File, type: 'avatar' | 'concept-art') => {
-    const url = await apiUploadImage(characterId, file, passwordRef.current, type);
-    if (url) {
-      if (type === 'avatar') update('avatar', url);
-      else update('conceptArt', url);
+    try {
+      const base64 = await new Promise<string>((resolve, reject) => {
+        const reader = new FileReader();
+        reader.onload = () => {
+          if (typeof reader.result === 'string') resolve(reader.result);
+          else reject(new Error('Failed to read file'));
+        };
+        reader.onerror = () => reject(reader.error);
+        reader.readAsDataURL(file);
+      });
+
+      if (type === 'avatar') update('avatar', base64);
+      else update('conceptArt', base64);
+      return base64;
+    } catch (error) {
+      console.error('Failed to upload image:', error);
+      return null;
     }
-    return url;
-  }, [characterId, update]);
+  }, [update]);
 
   if (!loaded) {
     return (

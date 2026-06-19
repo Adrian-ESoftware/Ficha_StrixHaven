@@ -4,6 +4,7 @@ import { LeftColumn } from '@/components/grimoire/left-column';
 import { RightColumn } from '@/components/grimoire/right-column';
 import { LoreSection } from '@/components/grimoire/lore-section';
 import { LevelUpSection } from '@/components/grimoire/level-up-section';
+import { HakiSection } from '@/components/grimoire/haki-section';
 import { CardGallery } from '@/components/grimoire/card-gallery';
 import { Divider } from '@/components/grimoire/shared';
 import conceptImg from '@/components/imgs/concept.png';
@@ -290,6 +291,14 @@ function GrimoireSheet() {
 
           {/* Level Up Section */}
           <LevelUpSection />
+
+          {/* Haki separator */}
+          <div className="mt-12">
+            <Divider />
+          </div>
+
+          {/* Haki Section */}
+          <HakiSection />
           
         </div>
       </div>

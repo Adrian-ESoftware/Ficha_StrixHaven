@@ -410,7 +410,7 @@ export function CardGallery({ onClose }: { onClose: () => void }) {
       <button
         type="button"
         onClick={onClose}
-        className="fixed right-5 top-5 z-10 flex h-10 w-10 items-center justify-center rounded-full border border-primary bg-background/95 text-primary shadow-lg transition-colors hover:text-foreground"
+        className="absolute right-5 top-5 z-20 flex h-10 w-10 items-center justify-center rounded-full border border-primary bg-background/95 text-primary shadow-lg transition-colors hover:text-foreground"
         title="Fechar"
       >
         <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" className="w-5 h-5">
